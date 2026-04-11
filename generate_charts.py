@@ -186,18 +186,20 @@ def multi_timeframe_chart(ticker: str) -> str:
 def financial_trend_bar(ticker: str) -> str:
     """
     売上高 / 純利益 の四半期推移（直近12四半期）を描画する。
-    四半期データが取得できない場合は年次データにフォールバック。
-    各棒の真上に金額ラベル、各棒の真下（x軸ラベルの上）に前年同期比（YoY）を表示。
-    ダークモード。日付を右上に表示。
+    ・四半期優先 → 取得不可の場合は年次にフォールバック
+    ・会計年度ごとに背景バンド + 区切り破線 + 年度ラベルを描画（参考: 学情スタイル）
+    ・棒の真上に金額ラベル（大きめフォント）
+    ・棒の真下 x 軸に前年同期比（YoY）を色分け表示
+    ・ダークモード / 右上に実行日を表示
     """
-    from datetime import date
+    from datetime import date as date_cls
     from matplotlib.transforms import blended_transform_factory
 
     sym  = yf.Ticker(ticker)
     info = sym.info
     name = _safe(info, "shortName", "longName", default=ticker)
 
-    # 四半期優先、空なら年次にフォールバック
+    # ── データ取得: 四半期優先・年次フォールバック ────────────────────────────
     is_quarterly = True
     fin = sym.quarterly_financials
     if fin.empty:
@@ -207,6 +209,10 @@ def financial_trend_bar(ticker: str) -> str:
         fin = sym.financials
     if fin.empty:
         fin = sym.income_stmt
+
+    # 年次データの列から決算月を検出
+    af = sym.financials if not sym.financials.empty else sym.income_stmt
+    fy_end_month = af.columns[0].month if not af.empty else 3
 
     def _row(candidates):
         for c in candidates:
@@ -224,56 +230,84 @@ def financial_trend_bar(ticker: str) -> str:
         print(f"  [WARN] {ticker}: 財務データを取得できませんでした → スキップ")
         return ""
 
-    # 億円単位 Series に変換
-    def _to_series(row, label):
-        if row is None:
-            return None
-        s = row / 1e8
-        s.index = [c.strftime("%Y/%m") for c in s.index]
-        s.name  = label
-        return s
+    def _to_億(row, label):
+        return (row / 1e8).rename(label) if row is not None else None
 
-    rev_s = _to_series(rev_row, "売上高")
-    net_s = _to_series(net_row, "純利益")
+    # Timestamp インデックスのまま結合（FY 判定に使う）
+    df_raw = pd.concat(
+        [s for s in [_to_億(rev_row, "売上高"), _to_億(net_row, "純利益")] if s is not None],
+        axis=1,
+    ).sort_index()
+    df_raw = df_raw.iloc[-(12 if is_quarterly else 8):]
 
-    df = pd.concat([s for s in [rev_s, net_s] if s is not None], axis=1)
-    df = df.sort_index()
-    # 四半期なら直近12期、年次なら直近8期
-    max_periods = 12 if is_quarterly else 8
-    df = df.iloc[-max_periods:]
+    # ── 会計年度・四半期番号の算出 ────────────────────────────────────────────
+    def _fy_q(ts):
+        """(fy_label: '24年度', q: 1-4) を返す"""
+        m, y = ts.month, ts.year
+        fy_year = y if m <= fy_end_month else y + 1
+        fy_start = (fy_end_month % 12) + 1
+        elapsed  = (m - fy_start) % 12
+        return f"{fy_year % 100:02d}年度", elapsed // 3 + 1
 
-    labels  = list(df.index)
-    n_dates = len(labels)
-    n_cols  = len(df.columns)
-    x       = np.arange(n_dates)
-    total_w = 0.65
-    bar_w   = total_w / n_cols
+    ts_list   = list(df_raw.index)
+    fy_labels = [_fy_q(ts)[0] for ts in ts_list]
+    x_labels  = [f"{_fy_q(ts)[0]}{_fy_q(ts)[1]}期" for ts in ts_list]
 
-    COL_PALETTE = {"売上高": ACCENT, "純利益": UP}
+    df        = df_raw.copy()
+    df.index  = x_labels
 
-    # ── 前年同期比（YoY）計算 ──────────────────────────────────────────────────
-    # 四半期: 4期前と比較 / 年次: 1期前と比較
+    # ── YoY 計算（四半期: 4期前 / 年次: 1期前） ───────────────────────────────
     yoy_step = 4 if is_quarterly else 1
     yoy_data: dict[str, dict[str, float]] = {}
     for col in df.columns:
         yoy_col: dict[str, float] = {}
-        for i, lbl in enumerate(labels):
+        for i, lbl in enumerate(x_labels):
             if i < yoy_step:
                 continue
-            curr = df[col].iloc[i]
-            prev = df[col].iloc[i - yoy_step]
+            curr, prev = df[col].iloc[i], df[col].iloc[i - yoy_step]
             if pd.notna(curr) and pd.notna(prev) and prev != 0:
                 yoy_col[lbl] = (curr - prev) / abs(prev) * 100
         yoy_data[col] = yoy_col
 
-    # ── 描画 ──────────────────────────────────────────────────────────────────
+    # ── FY グループ ───────────────────────────────────────────────────────────
+    unique_fys: list[str] = list(dict.fromkeys(fy_labels))
+    fy_groups: dict[str, list[int]] = {}
+    for i, fy in enumerate(fy_labels):
+        fy_groups.setdefault(fy, []).append(i)
+
+    # ── 描画準備 ──────────────────────────────────────────────────────────────
+    n_dates = len(x_labels)
+    n_cols  = len(df.columns)
+    x       = np.arange(n_dates)
+    bar_w   = 0.65 / n_cols
+
+    # 値フォーマット: 小さい値は小数1桁、大きい値は整数
+    def _fmt_val(v: float) -> str:
+        return f"{v:.1f}" if abs(v) < 100 else f"{v:,.0f}"
+
+    COL_PALETTE = {"売上高": ACCENT, "純利益": UP}
+    # 会計年度ごとの背景バンド色（非常に淡いダーク色）
+    BAND_COLS   = ["#1c1900", "#001c1a", "#1a001c", "#001a08"]
+
     fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
     _apply_dark(fig, [ax])
-    # 下部余白を広げて YoY ラベルと四半期ラベルを収める
-    fig.subplots_adjust(bottom=0.23, top=0.89, left=0.09, right=0.96)
+    # 下部: YoY + 期ラベル / 上部: 年度ラベル + タイトル のために余白確保
+    fig.subplots_adjust(bottom=0.26, top=0.86, left=0.09, right=0.96)
 
+    # ── 会計年度 背景バンド & 区切り破線（四半期データのみ） ─────────────────
+    if is_quarterly:
+        for fi, fy in enumerate(unique_fys):
+            idxs = fy_groups[fy]
+            ax.axvspan(idxs[0] - 0.45, idxs[-1] + 0.45,
+                       color=BAND_COLS[fi % len(BAND_COLS)],
+                       alpha=1.0, zorder=0)
+        for fi in range(len(unique_fys) - 1):
+            sep_x = fy_groups[unique_fys[fi]][-1] + 0.5
+            ax.axvline(sep_x, color="#555555", linewidth=1.2,
+                       linestyle="--", alpha=0.7, zorder=1)
+
+    # ── 棒グラフ ──────────────────────────────────────────────────────────────
     has_negative = False
-
     for i, col in enumerate(df.columns):
         vals     = df[col].values.astype(float)
         offset   = (i - (n_cols - 1) / 2) * bar_w
@@ -282,96 +316,94 @@ def financial_trend_bar(ticker: str) -> str:
 
         bars = ax.bar(x + offset, np.nan_to_num(vals, nan=0.0),
                       bar_w * 0.85, color=bar_cols, label=col,
-                      zorder=3, edgecolor=BG, linewidth=0.6)
+                      zorder=3, edgecolor=BG, linewidth=0.5)
 
-        for j, (bar, val) in enumerate(zip(bars, vals)):
+        for bar, val in zip(bars, vals):
             if np.isnan(val):
                 continue
             if val < 0:
                 has_negative = True
-
             bx = bar.get_x() + bar.get_width() / 2
-
-            # 棒の真上（負値は真下）に金額ラベルを大きく描画
             if val >= 0:
-                anchor_y = bar.get_y() + bar.get_height()
-                va       = "bottom"
-                dy_pt    = 5
+                anchor_y, va, dy = bar.get_y() + bar.get_height(), "bottom", 4
             else:
-                anchor_y = bar.get_y()
-                va       = "top"
-                dy_pt    = -5
-
-            ax.annotate(
-                f"{val:.0f}億",
-                xy=(bx, anchor_y),
-                xytext=(0, dy_pt),
-                textcoords="offset points",
-                ha="center", va=va,
-                fontsize=14, fontweight="bold",
-                color=TEXT, zorder=5,
-            )
+                anchor_y, va, dy = bar.get_y(), "top", -4
+            ax.annotate(_fmt_val(val),
+                        xy=(bx, anchor_y), xytext=(0, dy),
+                        textcoords="offset points",
+                        ha="center", va=va,
+                        fontsize=13, fontweight="bold",
+                        color=TEXT, zorder=5)
 
     # ゼロライン
-    ax.axhline(0, color=TEXT_DIM, linewidth=1.0, linestyle="-", zorder=2)
+    ax.axhline(0, color=TEXT_DIM, linewidth=1.0, zorder=2)
 
-    # y 上限を 15% 拡張してラベルが棒グラフ上端に収まるようにする
+    # y 上限を拡張して上部ラベルが棒に被らないようにする
     ylo, yhi = ax.get_ylim()
-    ax.set_ylim(ylo, yhi * 1.18)
-
-    # 赤字エリア薄ハイライト
+    ax.set_ylim(ylo, yhi * 1.20)
     ylo2, _ = ax.get_ylim()
     if ylo2 < 0:
         ax.axhspan(ylo2, 0, color=DOWN, alpha=0.04, zorder=1)
 
-    # ── x 軸: デフォルトラベルを消して手動で描画 ─────────────────────────────
+    # ── x 軸: デフォルト非表示 → 手動で YoY & 期ラベルを描画 ─────────────────
     ax.set_xticks(x)
     ax.set_xticklabels([])
     ax.tick_params(axis="x", length=0)
 
     trans = blended_transform_factory(ax.transData, ax.transAxes)
 
-    for xi, lbl in enumerate(labels):
-        # --- YoY テキスト（各棒の x 中心位置に、x 軸直下に配置）---
+    for xi, lbl in enumerate(x_labels):
+        # YoY テキスト（各棒の x 中心位置、x 軸直下）
         for ci, col in enumerate(df.columns):
             yoy = yoy_data[col].get(lbl)
             if yoy is None:
                 continue
             col_offset = (ci - (n_cols - 1) / 2) * bar_w
-            bar_cx     = xi + col_offset
             yoy_color  = "#00c8b0" if yoy >= 0 else "#ff4455"
             sign       = "+" if yoy >= 0 else ""
-            ax.text(bar_cx, -0.045,
+            ax.text(xi + col_offset, -0.045,
                     f"{sign}{yoy:.1f}%",
-                    ha="center", va="top",
-                    transform=trans,
-                    fontsize=11, fontweight="bold",
+                    ha="center", va="top", transform=trans,
+                    fontsize=10, fontweight="bold",
                     color=yoy_color, clip_on=False)
 
-        # --- 四半期ラベル（グループ中央、YoY の下）---
-        ax.text(xi, -0.105, lbl,
-                ha="center", va="top",
-                transform=trans,
-                fontsize=12, color=TEXT, clip_on=False)
+        # 四半期ラベル（グループ中央・YoY の下）
+        ax.text(xi, -0.115, lbl,
+                ha="center", va="top", transform=trans,
+                fontsize=10, color=TEXT_DIM, clip_on=False)
 
-    # ── 軸フォーマット ────────────────────────────────────────────────────────
+    # "(前年同期比)" 行ヘッダ
+    ax.text(0.0, -0.048, "(前年同期比)",
+            ha="right", va="top", transform=ax.transAxes,
+            fontsize=9, color=TEXT_DIM, clip_on=False)
+
+    # ── 会計年度ラベル（バンド上部、棒グラフ上方） ───────────────────────────
+    if is_quarterly:
+        for fy in unique_fys:
+            cx = float(np.mean(fy_groups[fy]))
+            ax.text(cx, 1.012, fy,
+                    ha="center", va="bottom", transform=trans,
+                    fontsize=13, fontweight="bold",
+                    color=TEXT_DIM, clip_on=False)
+
+    # ── 軸・凡例 ──────────────────────────────────────────────────────────────
     ax.set_ylabel("金額（億円）", color=TEXT_DIM, fontsize=13)
     ax.yaxis.set_major_formatter(plt.FuncFormatter(_fmt_oku))
     ax.tick_params(axis="y", labelsize=13, colors=TEXT_DIM)
 
-    ax.legend(loc="upper left", fontsize=14,
-              facecolor=BG3, edgecolor=GRID_COL, labelcolor=TEXT, framealpha=0.9)
+    ax.legend(loc="upper left", fontsize=13,
+              facecolor=BG3, edgecolor=GRID_COL, labelcolor=TEXT,
+              framealpha=0.9, borderpad=0.8)
 
     if has_negative:
-        ax.text(0.01, 0.02, "▼ = 赤字（マイナス値）",
+        ax.text(0.01, 0.03, "▼ = 赤字（マイナス値）",
                 transform=ax.transAxes, fontsize=11, color=DOWN, alpha=0.85)
 
-    # 実行日を右上に表示
-    today    = date.today()
+    # 実行日（右上）
+    today    = date_cls.today()
     date_str = f"{today.year}年{today.month:02d}月{today.day:02d}日現在"
     ax.text(0.99, 1.018, date_str,
-            transform=ax.transAxes,
-            ha="right", va="bottom",
+            transform=ax.transAxes, ha="right", va="bottom",
             fontsize=12, color=TEXT_DIM, clip_on=False)
 
     freq_label = "四半期別" if is_quarterly else "年度別"
