@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# 出力ファイル（音声・原稿）
+outputs/
+
+# 画像ファイル
+pic/
+*.png
+*.jpg
+*.jpeg
+
+# 音声ファイル
+*.mp3
+*.wav
+
+# テキスト・メモ
+*.txt
+
+# 認証情報（絶対にGitHubに送らない）
+credential.json
+*.json
+!pronunciation_dict.json
+
+# pip インストーラー
+get-pip.py
+
+# macOS
+.DS_Store
+.AppleDouble
+
+# VSCode
+.vscode/
