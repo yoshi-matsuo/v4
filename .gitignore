@@ -19,7 +19,7 @@ pic/
 *.wav
 
 # テキスト・メモ
-*.txt
+
 
 # 認証情報（絶対にGitHubに送らない）
 credential.json

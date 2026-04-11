@@ -23,8 +23,17 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 from matplotlib.gridspec import GridSpec
-import japanize_matplotlib          # noqa: F401  — import するだけで日本語フォント有効化
 import seaborn as sns
+
+# Mac 標準日本語フォントを直接設定（japanize_matplotlib 不要）
+for _jp_font in ["Hiragino Sans", "AppleGothic"]:
+    try:
+        matplotlib.font_manager.findfont(_jp_font, fallback_to_default=False)
+        matplotlib.rcParams["font.family"] = _jp_font
+        break
+    except Exception:
+        pass
+matplotlib.rcParams["axes.unicode_minus"] = False
 import yfinance as yf
 
 # ── 出力先 ──────────────────────────────────────────────────────────────────
@@ -199,36 +208,86 @@ def financial_trend_bar(ticker: str) -> str:
     info = sym.info
     name = _safe(info, "shortName", "longName", default=ticker)
 
-    # ── データ取得: 四半期優先・年次フォールバック ────────────────────────────
+    # ── 候補ラベル定義（大文字小文字・表記揺れ対応） ─────────────────────────
+    REV_CANDIDATES = [
+        "Total Revenue", "Revenue", "Operating Revenue",
+        "Total Operating Revenue", "Net Sales",
+    ]
+    NET_CANDIDATES = [
+        "Net Income", "Net Income Common Stockholders",
+        "Net Income Continuous Operations",
+        "Net Income attributable to owners of parent",
+    ]
+
+    def _first_nonempty(*frames: pd.DataFrame) -> pd.DataFrame:
+        """渡した DataFrame を順番に試し、空でない最初のものを返す"""
+        for f in frames:
+            if f is not None and not f.empty:
+                return f
+        return pd.DataFrame()
+
+    def _row(fin: pd.DataFrame, candidates: list[str]):
+        """大文字小文字を区別せずに候補行を探し、最初にヒットした行を返す"""
+        if fin.empty:
+            return None
+        idx_lower = {str(i).lower(): i for i in fin.index}
+        for c in candidates:
+            actual = idx_lower.get(c.lower())
+            if actual is not None:
+                row = fin.loc[actual].dropna()
+                if not row.empty:
+                    print(f"  [INFO] {ticker}: '{actual}' で一致")
+                    return row.sort_index()
+        return None
+
+    # ── Step 1: 四半期データを試す ────────────────────────────────────────────
     is_quarterly = True
-    fin = sym.quarterly_financials
-    if fin.empty:
-        fin = sym.quarterly_income_stmt
-    if fin.empty:
+    fin_q = _first_nonempty(sym.quarterly_financials, sym.quarterly_income_stmt)
+
+    if not fin_q.empty:
+        print(f"  [INFO] {ticker}: 四半期データ取得 "
+              f"(行数={len(fin_q.index)}, 列数={len(fin_q.columns)})")
+
+    rev_row = _row(fin_q, REV_CANDIDATES)
+    net_row = _row(fin_q, NET_CANDIDATES)
+
+    # ── Step 2: 四半期で行が取れなければ通期にフォールバック ─────────────────
+    if rev_row is None and net_row is None:
+        if not fin_q.empty:
+            print(f"  [WARN] {ticker}: 四半期データ内に対象行なし"
+                  f" → 通期データに切り替えます")
+            print(f"  [DEBUG] 四半期インデックス一覧: {list(fin_q.index)}")
+        else:
+            print(f"  [INFO] {ticker}: 四半期データが空 → 通期データを試行")
+
         is_quarterly = False
-        fin = sym.financials
-    if fin.empty:
-        fin = sym.income_stmt
+        fin_a = _first_nonempty(sym.financials, sym.income_stmt)
+
+        if fin_a.empty:
+            print(f"  [ERROR] {ticker}: 通期データも取得できませんでした → スキップ")
+            return ""
+
+        print(f"  [INFO] {ticker}: 通期データ取得 "
+              f"(行数={len(fin_a.index)}, 列数={len(fin_a.columns)})")
+        rev_row = _row(fin_a, REV_CANDIDATES)
+        net_row = _row(fin_a, NET_CANDIDATES)
+        fin     = fin_a
+    else:
+        fin = fin_q
+
+    # ── Step 3: 通期でも見つからなければ全インデックスを出力して諦める ─────────
+    if rev_row is None and net_row is None:
+        print(f"  [ERROR] {ticker}: 四半期・通期ともに売上高・純利益行が見つかりません → スキップ")
+        print(f"  [DEBUG] 通期インデックス一覧: {list(fin.index)}")
+        return ""
+    if rev_row is None:
+        print(f"  [WARN] {ticker}: 売上高行が見つかりません → 純利益のみで描画します")
+    if net_row is None:
+        print(f"  [WARN] {ticker}: 純利益行が見つかりません → 売上高のみで描画します")
 
     # 年次データの列から決算月を検出
     af = sym.financials if not sym.financials.empty else sym.income_stmt
     fy_end_month = af.columns[0].month if not af.empty else 3
-
-    def _row(candidates):
-        for c in candidates:
-            if c in fin.index:
-                row = fin.loc[c].dropna()
-                if not row.empty:
-                    return row.sort_index()
-        return None
-
-    rev_row = _row(["Total Revenue", "Operating Revenue"])
-    net_row = _row(["Net Income Common Stockholders", "Net Income",
-                    "Net Income Continuous Operations"])
-
-    if rev_row is None and net_row is None:
-        print(f"  [WARN] {ticker}: 財務データを取得できませんでした → スキップ")
-        return ""
 
     def _to_億(row, label):
         return (row / 1e8).rename(label) if row is not None else None
@@ -238,7 +297,15 @@ def financial_trend_bar(ticker: str) -> str:
         [s for s in [_to_億(rev_row, "売上高"), _to_億(net_row, "純利益")] if s is not None],
         axis=1,
     ).sort_index()
+
+    # NaN クリーニング: 全列が NaN の行（期間）を除去して有効データのみグラフ化
+    df_raw = df_raw.dropna(how="all")
+    if df_raw.empty:
+        print(f"  [ERROR] {ticker}: NaN 除去後にデータが残りませんでした → スキップ")
+        return ""
+
     df_raw = df_raw.iloc[-(12 if is_quarterly else 8):]
+    print(f"  [INFO] {ticker}: グラフ化対象 {len(df_raw)} 期分")
 
     # ── 会計年度・四半期番号の算出 ────────────────────────────────────────────
     def _fy_q(ts):
@@ -279,7 +346,7 @@ def financial_trend_bar(ticker: str) -> str:
     n_dates = len(x_labels)
     n_cols  = len(df.columns)
     x       = np.arange(n_dates)
-    bar_w   = 0.65 / n_cols
+    bar_w   = 0.65 / max(n_cols, 1)
 
     # 値フォーマット: 小さい値は小数1桁、大きい値は整数
     def _fmt_val(v: float) -> str:
@@ -289,131 +356,140 @@ def financial_trend_bar(ticker: str) -> str:
     # 会計年度ごとの背景バンド色（非常に淡いダーク色）
     BAND_COLS   = ["#1c1900", "#001c1a", "#1a001c", "#001a08"]
 
-    fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
-    _apply_dark(fig, [ax])
-    # 下部: YoY + 期ラベル / 上部: 年度ラベル + タイトル のために余白確保
-    fig.subplots_adjust(bottom=0.26, top=0.86, left=0.09, right=0.96)
-
-    # ── 会計年度 背景バンド & 区切り破線（四半期データのみ） ─────────────────
-    if is_quarterly:
-        for fi, fy in enumerate(unique_fys):
-            idxs = fy_groups[fy]
-            ax.axvspan(idxs[0] - 0.45, idxs[-1] + 0.45,
-                       color=BAND_COLS[fi % len(BAND_COLS)],
-                       alpha=1.0, zorder=0)
-        for fi in range(len(unique_fys) - 1):
-            sep_x = fy_groups[unique_fys[fi]][-1] + 0.5
-            ax.axvline(sep_x, color="#555555", linewidth=1.2,
-                       linestyle="--", alpha=0.7, zorder=1)
-
-    # ── 棒グラフ ──────────────────────────────────────────────────────────────
-    has_negative = False
-    for i, col in enumerate(df.columns):
-        vals     = df[col].values.astype(float)
-        offset   = (i - (n_cols - 1) / 2) * bar_w
-        base_col = COL_PALETTE.get(col, ACCENT)
-        bar_cols = [DOWN if (not np.isnan(v) and v < 0) else base_col for v in vals]
-
-        bars = ax.bar(x + offset, np.nan_to_num(vals, nan=0.0),
-                      bar_w * 0.85, color=bar_cols, label=col,
-                      zorder=3, edgecolor=BG, linewidth=0.5)
-
-        for bar, val in zip(bars, vals):
-            if np.isnan(val):
-                continue
-            if val < 0:
-                has_negative = True
-            bx = bar.get_x() + bar.get_width() / 2
-            if val >= 0:
-                anchor_y, va, dy = bar.get_y() + bar.get_height(), "bottom", 4
-            else:
-                anchor_y, va, dy = bar.get_y(), "top", -4
-            ax.annotate(_fmt_val(val),
-                        xy=(bx, anchor_y), xytext=(0, dy),
-                        textcoords="offset points",
-                        ha="center", va=va,
-                        fontsize=13, fontweight="bold",
-                        color=TEXT, zorder=5)
-
-    # ゼロライン
-    ax.axhline(0, color=TEXT_DIM, linewidth=1.0, zorder=2)
-
-    # y 上限を拡張して上部ラベルが棒に被らないようにする
-    ylo, yhi = ax.get_ylim()
-    ax.set_ylim(ylo, yhi * 1.20)
-    ylo2, _ = ax.get_ylim()
-    if ylo2 < 0:
-        ax.axhspan(ylo2, 0, color=DOWN, alpha=0.04, zorder=1)
-
-    # ── x 軸: デフォルト非表示 → 手動で YoY & 期ラベルを描画 ─────────────────
-    ax.set_xticks(x)
-    ax.set_xticklabels([])
-    ax.tick_params(axis="x", length=0)
-
-    trans = blended_transform_factory(ax.transData, ax.transAxes)
-
-    for xi, lbl in enumerate(x_labels):
-        # YoY テキスト（各棒の x 中心位置、x 軸直下）
-        for ci, col in enumerate(df.columns):
-            yoy = yoy_data[col].get(lbl)
-            if yoy is None:
-                continue
-            col_offset = (ci - (n_cols - 1) / 2) * bar_w
-            yoy_color  = "#00c8b0" if yoy >= 0 else "#ff4455"
-            sign       = "+" if yoy >= 0 else ""
-            ax.text(xi + col_offset, -0.045,
-                    f"{sign}{yoy:.1f}%",
-                    ha="center", va="top", transform=trans,
-                    fontsize=10, fontweight="bold",
-                    color=yoy_color, clip_on=False)
-
-        # 四半期ラベル（グループ中央・YoY の下）
-        ax.text(xi, -0.115, lbl,
-                ha="center", va="top", transform=trans,
-                fontsize=10, color=TEXT_DIM, clip_on=False)
-
-    # "(前年同期比)" 行ヘッダ
-    ax.text(0.0, -0.048, "(前年同期比)",
-            ha="right", va="top", transform=ax.transAxes,
-            fontsize=9, color=TEXT_DIM, clip_on=False)
-
-    # ── 会計年度ラベル（バンド上部、棒グラフ上方） ───────────────────────────
-    if is_quarterly:
-        for fy in unique_fys:
-            cx = float(np.mean(fy_groups[fy]))
-            ax.text(cx, 1.012, fy,
-                    ha="center", va="bottom", transform=trans,
-                    fontsize=13, fontweight="bold",
-                    color=TEXT_DIM, clip_on=False)
-
-    # ── 軸・凡例 ──────────────────────────────────────────────────────────────
-    ax.set_ylabel("金額（億円）", color=TEXT_DIM, fontsize=13)
-    ax.yaxis.set_major_formatter(plt.FuncFormatter(_fmt_oku))
-    ax.tick_params(axis="y", labelsize=13, colors=TEXT_DIM)
-
-    ax.legend(loc="upper left", fontsize=13,
-              facecolor=BG3, edgecolor=GRID_COL, labelcolor=TEXT,
-              framealpha=0.9, borderpad=0.8)
-
-    if has_negative:
-        ax.text(0.01, 0.03, "▼ = 赤字（マイナス値）",
-                transform=ax.transAxes, fontsize=11, color=DOWN, alpha=0.85)
-
-    # 実行日（右上）
-    today    = date_cls.today()
-    date_str = f"{today.year}年{today.month:02d}月{today.day:02d}日現在"
-    ax.text(0.99, 1.018, date_str,
-            transform=ax.transAxes, ha="right", va="bottom",
-            fontsize=12, color=TEXT_DIM, clip_on=False)
-
-    freq_label = "四半期別" if is_quarterly else "年度別"
-    fig.suptitle(f"{name}  ({ticker})  |  財務トレンド（{freq_label}）",
-                 fontsize=18, color=TEXT, fontweight="bold", y=0.97)
-
     out = os.path.join(OUT_DIR, "financial_trend_bar.png")
-    fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=BG)
-    plt.close(fig)
-    print(f"  ✓ saved: {out}")
+    fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
+    try:
+        _apply_dark(fig, [ax])
+        # 下部: YoY + 期ラベル / 上部: 年度ラベル + タイトル のために余白確保
+        fig.subplots_adjust(bottom=0.26, top=0.86, left=0.09, right=0.96)
+
+        # ── 会計年度 背景バンド & 区切り破線（四半期データのみ） ─────────────
+        if is_quarterly:
+            for fi, fy in enumerate(unique_fys):
+                idxs = fy_groups[fy]
+                ax.axvspan(idxs[0] - 0.45, idxs[-1] + 0.45,
+                           color=BAND_COLS[fi % len(BAND_COLS)],
+                           alpha=1.0, zorder=0)
+            for fi in range(len(unique_fys) - 1):
+                sep_x = fy_groups[unique_fys[fi]][-1] + 0.5
+                ax.axvline(sep_x, color="#555555", linewidth=1.2,
+                           linestyle="--", alpha=0.7, zorder=1)
+
+        # ── 棒グラフ ──────────────────────────────────────────────────────────
+        has_negative = False
+        for i, col in enumerate(df.columns):
+            vals     = df[col].values.astype(float)
+            offset   = (i - (n_cols - 1) / 2) * bar_w
+            base_col = COL_PALETTE.get(col, ACCENT)
+            bar_cols = [DOWN if (not np.isnan(v) and v < 0) else base_col for v in vals]
+
+            bars = ax.bar(x + offset, np.nan_to_num(vals, nan=0.0),
+                          bar_w * 0.85, color=bar_cols, label=col,
+                          zorder=3, edgecolor=BG, linewidth=0.5)
+
+            for bar, val in zip(bars, vals):
+                if np.isnan(val):
+                    continue
+                if val < 0:
+                    has_negative = True
+                bx = bar.get_x() + bar.get_width() / 2
+                if val >= 0:
+                    anchor_y, va, dy = bar.get_y() + bar.get_height(), "bottom", 4
+                else:
+                    anchor_y, va, dy = bar.get_y(), "top", -4
+                ax.annotate(_fmt_val(val),
+                            xy=(bx, anchor_y), xytext=(0, dy),
+                            textcoords="offset points",
+                            ha="center", va=va,
+                            fontsize=13, fontweight="bold",
+                            color=TEXT, zorder=5)
+
+        # ゼロライン
+        ax.axhline(0, color=TEXT_DIM, linewidth=1.0, zorder=2)
+
+        # y 上限を拡張して上部ラベルが棒に被らないようにする
+        ylo, yhi = ax.get_ylim()
+        margin = yhi * 1.20 if yhi != 0 else 1.0
+        ax.set_ylim(ylo, margin)
+        ylo2, _ = ax.get_ylim()
+        if ylo2 < 0:
+            ax.axhspan(ylo2, 0, color=DOWN, alpha=0.04, zorder=1)
+
+        # ── x 軸: デフォルト非表示 → 手動で YoY & 期ラベルを描画 ─────────────
+        ax.set_xticks(x)
+        ax.set_xticklabels([])
+        ax.tick_params(axis="x", length=0)
+
+        trans = blended_transform_factory(ax.transData, ax.transAxes)
+
+        for xi, lbl in enumerate(x_labels):
+            # YoY テキスト（各棒の x 中心位置、x 軸直下）
+            for ci, col in enumerate(df.columns):
+                yoy = yoy_data[col].get(lbl)
+                if yoy is None:
+                    continue
+                col_offset = (ci - (n_cols - 1) / 2) * bar_w
+                yoy_color  = "#00c8b0" if yoy >= 0 else "#ff4455"
+                sign       = "+" if yoy >= 0 else ""
+                ax.text(xi + col_offset, -0.045,
+                        f"{sign}{yoy:.1f}%",
+                        ha="center", va="top", transform=trans,
+                        fontsize=10, fontweight="bold",
+                        color=yoy_color, clip_on=False)
+
+            # 四半期ラベル（グループ中央・YoY の下）
+            ax.text(xi, -0.115, lbl,
+                    ha="center", va="top", transform=trans,
+                    fontsize=10, color=TEXT_DIM, clip_on=False)
+
+        # "(前年同期比)" 行ヘッダ
+        ax.text(0.0, -0.048, "(前年同期比)",
+                ha="right", va="top", transform=ax.transAxes,
+                fontsize=9, color=TEXT_DIM, clip_on=False)
+
+        # ── 会計年度ラベル（バンド上部、棒グラフ上方） ───────────────────────
+        if is_quarterly:
+            for fy in unique_fys:
+                cx = float(np.mean(fy_groups[fy]))
+                ax.text(cx, 1.012, fy,
+                        ha="center", va="bottom", transform=trans,
+                        fontsize=13, fontweight="bold",
+                        color=TEXT_DIM, clip_on=False)
+
+        # ── 軸・凡例 ──────────────────────────────────────────────────────────
+        ax.set_ylabel("金額（億円）", color=TEXT_DIM, fontsize=13)
+        ax.yaxis.set_major_formatter(plt.FuncFormatter(_fmt_oku))
+        ax.tick_params(axis="y", labelsize=13, colors=TEXT_DIM)
+
+        ax.legend(loc="upper left", fontsize=13,
+                  facecolor=BG3, edgecolor=GRID_COL, labelcolor=TEXT,
+                  framealpha=0.9, borderpad=0.8)
+
+        if has_negative:
+            ax.text(0.01, 0.03, "▼ = 赤字（マイナス値）",
+                    transform=ax.transAxes, fontsize=11, color=DOWN, alpha=0.85)
+
+        # 実行日（右上）
+        today    = date_cls.today()
+        date_str = f"{today.year}年{today.month:02d}月{today.day:02d}日現在"
+        ax.text(0.99, 1.018, date_str,
+                transform=ax.transAxes, ha="right", va="bottom",
+                fontsize=12, color=TEXT_DIM, clip_on=False)
+
+        freq_label = "四半期別" if is_quarterly else "年度別"
+        fig.suptitle(f"{name}  ({ticker})  |  財務トレンド（{freq_label}）",
+                     fontsize=18, color=TEXT, fontweight="bold", y=0.97)
+
+    except Exception as e:
+        # 描画中に予期しないエラーが発生しても、それまでに描けた内容で保存する
+        print(f"  [WARN] {ticker}: 描画中にエラーが発生しました ({e})"
+              f" → 途中状態で保存を試みます")
+
+    finally:
+        fig.savefig(out, dpi=DPI, bbox_inches="tight", facecolor=BG)
+        plt.close(fig)
+        print(f"  ✓ saved: {out}")
+
     return out
 
 
@@ -466,12 +542,18 @@ def competitor_heatmap(main_ticker: str, peer_tickers: list[str]) -> str:
     raw_vals   = []    # list[list[float | None]]
 
     for sym_str in all_tickers:
+        # ── 銘柄情報の取得（404 / 空レスポンスはスキップ） ──────────────────
         try:
             sym  = yf.Ticker(sym_str)
             info = sym.info
+            # yfinance は無効ティッカーでも例外を投げずに空 or 最小限の dict を返す場合がある。
+            # quoteType が存在しなければ実質 404 と判断してスキップする。
+            if not info or info.get("quoteType") is None:
+                print(f"  [WARN] {sym_str}: 有効な銘柄情報なし (404等) → ヒートマップから除外")
+                continue
         except Exception as e:
-            print(f"  [WARN] {sym_str}: 取得失敗 ({e}) → N/A で埋めます")
-            info = {}
+            print(f"  [WARN] {sym_str}: 取得例外 ({e}) → ヒートマップから除外")
+            continue
 
         name  = _safe(info, "shortName", "longName", default=sym_str)
         label = f"{name}\n({sym_str})"
@@ -487,6 +569,10 @@ def competitor_heatmap(main_ticker: str, peer_tickers: list[str]) -> str:
 
         raw_vals.append(row)
         print(f"    {sym_str}: {dict(zip(metric_labels, row))}")
+
+    if not row_labels:
+        print(f"  [ERROR] competitor_heatmap: 有効な銘柄データが1社も取得できませんでした → スキップ")
+        return ""
 
     df_raw = pd.DataFrame(raw_vals, index=row_labels, columns=metric_labels)
 
@@ -575,18 +661,76 @@ def competitor_heatmap(main_ticker: str, peer_tickers: list[str]) -> str:
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# 銘柄ごとの競合リスト定義
+# ═══════════════════════════════════════════════════════════════════════════════
+# キー: メイン銘柄ティッカー / 値: 競合銘柄リスト
+PEER_MAP: dict[str, list[str]] = {
+    "6702.T": ["6701.T", "9613.T", "6501.T"],   # 富士通 → NEC / NTTデータ / 日立
+    "6701.T": ["6702.T", "9613.T", "6501.T"],   # NEC   → 富士通 / NTTデータ / 日立
+    "6501.T": ["6702.T", "6701.T", "9613.T"],   # 日立  → 富士通 / NEC / NTTデータ
+    "9613.T": ["6702.T", "6701.T", "6501.T"],   # NTTデータ → 富士通 / NEC / 日立
+    "7203.T": ["7267.T", "7269.T", "7270.T"],   # トヨタ → ホンダ / スズキ / SUBARU
+    "7267.T": ["7203.T", "7269.T", "7270.T"],   # ホンダ → トヨタ / スズキ / SUBARU
+    "6758.T": ["6752.T", "6753.T", "6954.T"],   # ソニー → パナソニック / シャープ / ファナック
+    "9984.T": ["9432.T", "9433.T", "4689.T"],   # ソフトバンクG → NTT / KDDI / Zホールディングス
+    "8306.T": ["8316.T", "8411.T", "8309.T"],   # 三菱UFJ → 三井住友 / みずほ / 三井住友トラスト
+    "4563.T": ["4587.T", "4592.T", "4568.T"],   # アンジェス → PeptiDream / サンバイオ / 第一三共
+    "4564.T": ["4587.T", "4563.T", "4592.T"],   # OTS → PeptiDream / アンジェス / サンバイオ
+}
+
+# PEER_MAP に登録がない銘柄に使うデフォルト競合リスト（TOPIX 主力）
+DEFAULT_PEERS: list[str] = ["7203.T", "6758.T", "9984.T", "8306.T"]
+
+
+def _resolve_peers(main_ticker: str, cli_peers: list[str]) -> list[str]:
+    """
+    競合リストを決定する。
+    1. CLI で競合が明示指定されていればそれを優先。
+    2. なければ PEER_MAP を引く。
+    3. PEER_MAP にもなければ DEFAULT_PEERS を使う。
+    """
+    if cli_peers:
+        return cli_peers
+    peers = PEER_MAP.get(main_ticker, DEFAULT_PEERS)
+    print(f"  [INFO] 競合リスト: {peers}  (PEER_MAP {'ヒット' if main_ticker in PEER_MAP else 'なし → デフォルト'})")
+    return peers
+
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # メイン
 # ═══════════════════════════════════════════════════════════════════════════════
+def _parse_ticker(arg: str) -> str:
+    """
+    引数から yfinance 用ティッカーを生成する。
+    「4桁の数字」を正規表現で抽出し、末尾に '.T' を付与して返す。
+
+    対応パターン例:
+      富士通_6702   → 6702.T
+      富士通_6702.T → 6702.T   ← .T 付きでも正しく抽出
+      6702          → 6702.T
+      6702.T        → 6702.T
+    4桁数字が見つからない場合は引数をそのまま返す（米国株ティッカー等の保険）。
+    """
+    import re
+    m = re.search(r"(\d{4})", arg)
+    if m:
+        return m.group(1) + ".T"
+    # 4桁が見つからなければ元の文字列を使う（例: AAPL）
+    return arg
+
+
 if __name__ == "__main__":
     import sys
 
     # 第1引数: メイン銘柄（省略時は 4564.T）
+    #   「銘柄名_コード」形式も受け付ける（例: 富士通_6702 → 6702.T）
     # 第2引数以降: 競合銘柄（省略時はデフォルト）
     # 使用例:
-    #   python3 generate_charts.py 7203.T
+    #   python3 generate_charts.py 富士通_6702
     #   python3 generate_charts.py 7203.T 7267.T 7269.T 7270.T
-    target_ticker = sys.argv[1] if len(sys.argv) > 1 else "4564.T"
-    PEER_TICKERS  = sys.argv[2:] if len(sys.argv) > 2 else ["4587.T", "4563.T", "4592.T"]
+    target_ticker = _parse_ticker(sys.argv[1]) if len(sys.argv) > 1 else "4564.T"
+    cli_peers     = [_parse_ticker(t) for t in sys.argv[2:]] if len(sys.argv) > 2 else []
+    PEER_TICKERS  = _resolve_peers(target_ticker, cli_peers)
 
     print("=" * 60)
     print("Stock Arena — チャート自動生成")
