@@ -58,6 +58,13 @@ FINAL_VIDEO = os.path.join(OUT_DIR, f"{PROJECT_NAME}_final_video.mp4")
 # BGM: Stock Arena V4 シリーズ共通アセット（固定パス）
 BGM_PATH        = "/Users/matsuoyoshihiro/v4/outputs/assets/audio/v4_standard_bgm.mp3"
 
+# BGM: パート別切り替え用ファイル
+_BGM_ASSETS_DIR = "/Users/matsuoyoshihiro/v4/outputs/assets/audio"
+BGM_PART12 = os.path.join(_BGM_ASSETS_DIR, "part1-2.mp3")  # Part 1・2 区間
+BGM_PART35 = os.path.join(_BGM_ASSETS_DIR, "part3-5.mp3")  # Part 3・4・5 区間
+BGM_PART6  = os.path.join(_BGM_ASSETS_DIR, "part6.mp3")    # Part 6 区間
+BGM_PART7  = os.path.join(_BGM_ASSETS_DIR, "part7.mp3")    # Part 7 区間
+
 # 共通素材ディレクトリ
 STOCK_DIR       = "/Users/matsuoyoshihiro/v4/outputs/images/stock"
 BACKGROUNDS_DIR = "/Users/matsuoyoshihiro/v4/outputs/assets/backgrounds"
@@ -69,19 +76,22 @@ CREDENTIAL_JSON = os.path.join(_JSTOCK_DIR, "credential.json")
 # ───────────────────────────────────────────────
 # TTS 設定
 # ───────────────────────────────────────────────
-TTS_VOICE         = "ja-JP-Chirp3-HD-Schedar"
-TTS_SPEAKING_RATE = 1.15
-TTS_MAX_CHARS     = 150   # 1トークンあたりの最大文字数（これを超えたら読点で再分割）
+TTS_VOICE         = "ja-JP-Chirp3-HD-Enceladus"
+TTS_SPEAKING_RATE = 1.1
+TTS_MAX_CHARS     = 100   # 1トークンあたりの最大文字数（これを超えたら読点で再分割）
 
 # ───────────────────────────────────────────────
 # BGM ミキシング設定
 # ───────────────────────────────────────────────
-BGM_INTRO_MS       = 2000   # イントロ（BGMのみ）: 2秒
-BGM_OUTRO_MS       = 8000   # アウトロ（BGMのみ）: 8秒
-BGM_FADEOUT_MS     = 5000   # アウトロのフェードアウト: 5秒
-BGM_DUCK_DB        = -20    # ナレーション中のBGM音量低減
-BGM_DUCK_FADE_MS   = 700    # ダッキング開始フェード: 0.7秒
-BGM_UNDUCK_FADE_MS = 3000   # アンダッキング復帰フェード: 3秒
+BGM_INTRO_MS        = 2000   # イントロ（BGMのみ）: 2秒
+BGM_OUTRO_MS        = 8000   # アウトロ（BGMのみ）: 8秒
+BGM_FADEIN_MS       = 2000   # 動画冒頭フェードイン: 2秒
+BGM_FADEOUT_END_MS  = 3000   # 動画末尾フェードアウト: 3秒
+BGM_CROSSFADE_MS    = 2000   # BGM切替クロスフェード幅: 2秒
+BGM_BASE_DB         = -18    # BGMベース音量（常時抑制）: 約12%
+BGM_DUCK_EXTRA_DB   = -6     # ナレーション中の追加ダッキング量（合計 -24dB）
+BGM_DUCK_FADE_MS    = 700    # ダッキング開始フェード: 0.7秒
+BGM_UNDUCK_FADE_MS  = 3000   # アンダッキング復帰フェード: 3秒
 
 # 内部マーカー（[BREAK_2S] を配列内で識別するための定数）
 _BREAK_TOKEN = "__BREAK_2S__"
@@ -417,6 +427,8 @@ def _clean_for_tts(text: str) -> str:
     # 読み仮名辞書置換（長さ降順適用済みのため誤爆なし）
     for original, reading in _PRONUNCIATION_DICT:
         text = text.replace(original, reading)
+    text = re.sub(r'<source[^>]*>.*?</source[^>]*>', '', text, flags=re.IGNORECASE | re.DOTALL)
+    text = re.sub(r'\[cite[^\]]*\]', '', text, flags=re.IGNORECASE)  # 引用タグ除去 [cite...] [cite: ...]
     text = re.sub(r'\*+', '', text)
     text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)
     text = re.sub(r'(\d),(\d)', r'\1\2', text)          # 数字カンマ除去
@@ -841,61 +853,170 @@ def build_video(
 
 
 # ───────────────────────────────────────────────
-# ⑤ BGM ミキシング（スムーズダッキング）
+# ⑤ BGM ミキシング（パート別切替 + スムーズダッキング）
 # ───────────────────────────────────────────────
-def mix_with_bgm(narration_path: str, output_path: str, bgm_path: str = BGM_PATH) -> str:
-    """ナレーション MP3 に BGM をダッキング合成し output_path へ書き出す。"""
+
+def _loop_bgm(bgm: "AudioSegment", duration_ms: int) -> "AudioSegment":
+    """BGM を duration_ms に満たない場合にシームレスループし、ちょうど duration_ms で返す。"""
+    if len(bgm) <= 0:
+        from pydub import AudioSegment as _AS
+        return _AS.silent(duration=duration_ms)
+    if len(bgm) >= duration_ms:
+        return bgm[:duration_ms]
+    loops = (duration_ms // len(bgm)) + 2
+    return (bgm * loops)[:duration_ms]
+
+
+def mix_with_bgm(
+    narration_path: str,
+    output_path: str,
+    slides: list[dict],
+    slide_durations_ms: list[int],
+) -> str:
+    """
+    ナレーション MP3 にパート別 BGM をダッキング合成し output_path へ書き出す。
+
+    BGM割り当て:
+      Part 1–2   → BGM_PART12
+      Part 3–5   → BGM_PART35
+      Part 6     → BGM_PART6
+      Part 7     → BGM_PART7
+
+    トランジション:
+      冒頭 2秒フェードイン、末尾 3秒フェードアウト、
+      Part境界（2→3, 5→6, 6→7）で 2秒クロスフェード。
+    """
     try:
         from pydub import AudioSegment
     except ImportError:
         raise RuntimeError("pydub が未インストールです。\n  pip3 install pydub")
 
-    if not os.path.exists(bgm_path):
-        raise FileNotFoundError(f"BGMファイルが見つかりません: {bgm_path}")
-
+    # ── ① ナレーション読み込み ─────────────────────────────────────
     _info("ナレーション音声を読み込み中…")
     narration = AudioSegment.from_mp3(narration_path)
-    _ok(f"ナレーション: {len(narration)/1000:.1f} 秒")
+    narration_ms = len(narration)
+    _ok(f"ナレーション: {narration_ms/1000:.1f} 秒")
 
-    _info("BGMを読み込み中…")
-    bgm_orig = AudioSegment.from_mp3(bgm_path)
-    _ok(f"BGM: {len(bgm_orig)/1000:.1f} 秒")
+    # ── ② スライド単位でパートの絶対タイムスタンプを計算 ────────────
+    # cumulative はナレーション先頭からの経過時間（BGM_INTRO_MS は未加算）
+    part_start_rel: dict[str, int] = {}   # "Part N" → ナレーション内相対開始ms
+    part_end_rel:   dict[str, int] = {}   # "Part N" → ナレーション内相対終了ms
+    cumulative = 0
+    for slide, dur in zip(slides, slide_durations_ms):
+        p = slide["part"]
+        if p not in part_start_rel:
+            part_start_rel[p] = cumulative
+        cumulative += dur
+        part_end_rel[p] = cumulative
 
-    total_needed_ms = BGM_INTRO_MS + len(narration) + BGM_UNDUCK_FADE_MS + BGM_OUTRO_MS
+    # BGM_INTRO_MS を加算して最終タイムライン上の絶対時刻へ変換
+    def _abs_start(p: str) -> int:
+        return BGM_INTRO_MS + part_start_rel.get(p, 0)
 
-    if len(bgm_orig) < total_needed_ms:
-        loops = (total_needed_ms // len(bgm_orig)) + 1
-        bgm_full = bgm_orig * loops
-    else:
-        bgm_full = bgm_orig
-    bgm_full = bgm_full[:total_needed_ms]
+    def _abs_end(p: str) -> int:
+        return BGM_INTRO_MS + part_end_rel.get(p, 0)
 
-    _info("BGMダッキング合成中…")
+    total_ms = BGM_INTRO_MS + narration_ms + BGM_UNDUCK_FADE_MS + BGM_OUTRO_MS
+
+    # ── ③ BGMグループの境界時刻を決定 ────────────────────────────────
+    # t12_end : Part 1+2 の終端（Part 2 が存在しなければ Part 1 の終端）
+    t12_end = _abs_end("Part 2") if "Part 2" in part_end_rel else _abs_end("Part 1")
+
+    # t35_end : Part 3–5 の終端（存在する最後のパートを採用）
+    t35_start = _abs_start("Part 3") if "Part 3" in part_start_rel else t12_end
+    t35_end   = t35_start
+    for _p in ("Part 3", "Part 4", "Part 5"):
+        if _p in part_end_rel:
+            t35_end = _abs_end(_p)
+
+    # t6_end : Part 6 の終端
+    t6_start = _abs_start("Part 6") if "Part 6" in part_start_rel else t35_end
+    t6_end   = _abs_end("Part 6")   if "Part 6" in part_end_rel   else t6_start
+
+    # t7_start : Part 7 の開始
+    t7_start = _abs_start("Part 7") if "Part 7" in part_start_rel else t6_end
+
+    _ok(f"パート境界 (ms): 1-2終端={t12_end}  3-5終端={t35_end}  6終端={t6_end}  7開始={t7_start}")
+
+    XFADE = BGM_CROSSFADE_MS  # クロスフェード幅 (2000ms)
+
+    # グループ定義: (bgm_path, timeline上の開始ms, 終了ms, フェードイン幅ms, フェードアウト幅ms)
+    # 2番目以降のグループは前グループと XFADE 分オーバーラップして開始することで
+    # overlay 時にクロスフェードを実現する
+    bgm_groups = [
+        (BGM_PART12, 0,                  t12_end,  BGM_FADEIN_MS,     XFADE             ),
+        (BGM_PART35, t35_start - XFADE,  t35_end,  XFADE,             XFADE             ),
+        (BGM_PART6,  t6_start  - XFADE,  t6_end,   XFADE,             XFADE             ),
+        (BGM_PART7,  t7_start  - XFADE,  total_ms, XFADE,             BGM_FADEOUT_END_MS),
+    ]
+
+    # ── ④ BGMトラック構築（サイレントベースに各グループをオーバーレイ）──
+    _info("BGMトラックを構築中…")
+    bgm_track = AudioSegment.silent(duration=total_ms).set_frame_rate(44100).set_channels(2)
+
+    for i, (bgm_path, seg_start, seg_end, fade_in_ms, fade_out_ms) in enumerate(bgm_groups):
+        seg_start = max(0, seg_start)
+        seg_end   = min(total_ms, seg_end)
+        seg_dur   = seg_end - seg_start
+        if seg_dur <= 0:
+            _ok(f"  BGMグループ {i+1}: 区間なし → スキップ")
+            continue
+        if not os.path.exists(bgm_path):
+            _ok(f"  BGMグループ {i+1}: ファイル未存在 → スキップ ({bgm_path})")
+            continue
+
+        bgm_raw = AudioSegment.from_mp3(bgm_path)
+        bgm_seg = _loop_bgm(bgm_raw, seg_dur)
+
+        # ベース音量を -18dB に統一
+        bgm_seg = bgm_seg + BGM_BASE_DB
+
+        # フェード処理（フェード幅がセグメント長を超えないようにクランプ）
+        fi = min(fade_in_ms,  seg_dur)
+        fo = min(fade_out_ms, seg_dur)
+        if fi > 0:
+            bgm_seg = bgm_seg.fade_in(fi)
+        if fo > 0:
+            bgm_seg = bgm_seg.fade_out(fo)
+
+        # フレームレート・チャンネルを揃えてオーバーレイ
+        bgm_seg = bgm_seg.set_frame_rate(44100).set_channels(2)
+        bgm_track = bgm_track.overlay(bgm_seg, position=seg_start)
+
+        _ok(f"  BGMグループ {i+1}: {os.path.basename(bgm_path)}"
+            f"  [{seg_start/1000:.1f}s–{seg_end/1000:.1f}s]"
+            f"  fadein={fi}ms fadeout={fo}ms")
+
+    # ── ⑤ ダッキング処理（ナレーション区間でBGMをさらに抑制） ────────
+    # BGM_BASE_DB (-18dB) を基準に、ナレーション中は BGM_DUCK_EXTRA_DB (-6dB) 追加低減
+    # → ナレーション中: 合計 -24dB、イントロ/アウトロ: -18dB
+    _info("ダッキング処理中…")
 
     narr_start      = BGM_INTRO_MS
-    narr_end        = narr_start + len(narration)
+    narr_end        = narr_start + narration_ms
     duck_fade_start = max(0, narr_start - BGM_DUCK_FADE_MS)
-    unduck_fade_end = narr_end + BGM_UNDUCK_FADE_MS
+    unduck_fade_end = min(total_ms, narr_end + BGM_UNDUCK_FADE_MS)
 
-    seg_intro  = bgm_full[:duck_fade_start]
-    seg_duck   = bgm_full[duck_fade_start:narr_start].fade(
-        to_gain=BGM_DUCK_DB, from_gain=0, start=0,
+    seg_intro  = bgm_track[:duck_fade_start]
+    seg_duck   = bgm_track[duck_fade_start:narr_start].fade(
+        to_gain=BGM_DUCK_EXTRA_DB, from_gain=0, start=0,
         duration=max(1, narr_start - duck_fade_start),
     )
-    seg_under  = bgm_full[narr_start:narr_end] + BGM_DUCK_DB
-    seg_unduck = bgm_full[narr_end:unduck_fade_end].fade(
-        from_gain=BGM_DUCK_DB, to_gain=0, start=0,
+    seg_under  = bgm_track[narr_start:narr_end] + BGM_DUCK_EXTRA_DB
+    seg_unduck = bgm_track[narr_end:unduck_fade_end].fade(
+        from_gain=BGM_DUCK_EXTRA_DB, to_gain=0, start=0,
         duration=max(1, unduck_fade_end - narr_end),
     )
-    seg_outro  = bgm_full[unduck_fade_end:total_needed_ms].fade_out(BGM_FADEOUT_MS)
+    seg_outro  = bgm_track[unduck_fade_end:total_ms]
 
     bgm_track = seg_intro + seg_duck + seg_under + seg_unduck + seg_outro
 
+    # ── ⑥ ナレーションをオーバーレイ ─────────────────────────────────
     narration = narration.set_frame_rate(bgm_track.frame_rate).set_channels(bgm_track.channels)
     final = bgm_track.overlay(narration, position=BGM_INTRO_MS)
-
     _ok(f"ミキシング完了: {len(final)/1000:.1f} 秒")
 
+    # ── ⑦ 書き出し ────────────────────────────────────────────────────
     os.makedirs(os.path.dirname(output_path), exist_ok=True)
     fd, tmp = tempfile.mkstemp(suffix=".mp3")
     os.close(fd)
@@ -915,21 +1036,30 @@ def main() -> None:
     _sep()
     print(f"{BOLD}  Stock Arena V4  ─  Narration + Video Engine{RESET}")
     _sep()
-    print(f"  script.json : {DIM}{SCRIPT_JSON}{RESET}")
-    print(f"  slides dir  : {DIM}{SLIDES_DIR}{RESET}")
-    print(f"  BGM         : {DIM}{BGM_PATH}{RESET}")
-    print(f"  音声出力     : {DIM}{FINAL_MP3}{RESET}")
-    print(f"  動画出力     : {DIM}{FINAL_VIDEO}{RESET}")
+    print(f"  script.json  : {DIM}{SCRIPT_JSON}{RESET}")
+    print(f"  slides dir   : {DIM}{SLIDES_DIR}{RESET}")
+    print(f"  BGM (Part1-2): {DIM}{BGM_PART12}{RESET}")
+    print(f"  BGM (Part3-5): {DIM}{BGM_PART35}{RESET}")
+    print(f"  BGM (Part6)  : {DIM}{BGM_PART6}{RESET}")
+    print(f"  BGM (Part7)  : {DIM}{BGM_PART7}{RESET}")
+    print(f"  音声出力      : {DIM}{FINAL_MP3}{RESET}")
+    print(f"  動画出力      : {DIM}{FINAL_VIDEO}{RESET}")
     print()
 
     # ── 前提チェック ───────────────────────────────────────────────────
     _head("前提チェック")
     ok = True
-    if not os.path.exists(BGM_PATH):
-        _fail(f"BGMファイルが見つかりません: {BGM_PATH}")
-        ok = False
-    else:
-        _ok(f"BGM: {BGM_PATH}")
+    for _bgm_label, _bgm_p in [
+        ("BGM Part1-2", BGM_PART12),
+        ("BGM Part3-5", BGM_PART35),
+        ("BGM Part6",   BGM_PART6),
+        ("BGM Part7",   BGM_PART7),
+    ]:
+        if not os.path.exists(_bgm_p):
+            _fail(f"{_bgm_label} ファイルが見つかりません: {_bgm_p}")
+            ok = False
+        else:
+            _ok(f"{_bgm_label}: {_bgm_p}")
 
     if not os.path.exists(SCRIPT_JSON):
         _fail(f"script.json が見つかりません: {SCRIPT_JSON}")
@@ -998,10 +1128,10 @@ def main() -> None:
     _ok(f"TTS 完了 ({time.perf_counter()-t0:.1f}秒)")
 
     # ── STEP 3: BGM ミキシング ────────────────────────────────────────
-    _head("STEP 3  BGMミキシング（スムーズダッキング）")
+    _head("STEP 3  BGMミキシング（パート別切替 + スムーズダッキング）")
     t1 = time.perf_counter()
     try:
-        mix_with_bgm(TEMP_MP3, FINAL_MP3)
+        mix_with_bgm(TEMP_MP3, FINAL_MP3, slides, slide_durations_ms)
     except Exception as e:
         _fail(f"BGMミキシング失敗: {e}")
         sys.exit(1)

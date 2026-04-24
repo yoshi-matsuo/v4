@@ -4,6 +4,7 @@ slide_engine_v4.py — Stock Arena V4 一括スライド生成エンジン
 script.json を読み込み、make_single_slide.py を呼び出して全スライドを連番PNGで出力する。
 """
 
+import glob
 import json
 import os
 import random
@@ -113,6 +114,23 @@ def _print_footer(total: int, errors: list, wall: float) -> None:
 
 
 # ───────────────────────────────────────────────
+# 引用タグ除去（スライド描画テキスト用フェイルセーフ）
+# ───────────────────────────────────────────────
+def _clean_display_text(text: str) -> str:
+    """
+    スライド描画に渡す直前にAI出力の引用タグノイズを除去する。
+    対象: <source>〜</source>, <source1>〜</source1> 等 / [cite:1], [cite: 12] 等
+    """
+    if not text:
+        return text
+    # <source> / <source1> / <source 1> など属性・数字付きを含む開閉タグをコンテンツごと除去
+    text = re.sub(r'<source[^>]*>.*?</source[^>]*>', '', text, flags=re.IGNORECASE | re.DOTALL)
+    # [cite:1] / [cite: 1] / [cite:12] など表記揺れを一括除去
+    text = re.sub(r'\[cite[^\]]*\]', '', text, flags=re.IGNORECASE)
+    return text.strip()
+
+
+# ───────────────────────────────────────────────
 # narration 安全抽出（表示用フォールバック）
 # ───────────────────────────────────────────────
 def _first_sentence(text: str, max_chars: int = 50) -> str:
@@ -137,45 +155,100 @@ def _first_sentence(text: str, max_chars: int = 50) -> str:
 # ───────────────────────────────────────────────
 # 画像パス絶対解決
 # ───────────────────────────────────────────────
+_ALL_DIR         = "/Users/matsuoyoshihiro/v4/outputs/images/all"
 _STOCK_DIR       = "/Users/matsuoyoshihiro/v4/outputs/images/stock"
 _BACKGROUNDS_DIR = "/Users/matsuoyoshihiro/v4/outputs/assets/backgrounds"
 
+
+# ───────────────────────────────────────────────
+# 山札（デッキ）方式 画像セレクター
+# ───────────────────────────────────────────────
+class ImageDeck:
+    """
+    全画像をシャッフルして保持し、1枚ずつ順に返す（非復元抽出）。
+
+    山札が尽きると自動的にディスクを再スキャン・再シャッフルして補充する。
+    これにより、長スライドのループでも各画像が均等に出現することを保証する。
+    """
+
+    def __init__(self, root: str, pattern: str = "**/*.png") -> None:
+        self._root    = root
+        self._pattern = pattern
+        self._deck: list[str] = []
+        self._refill()
+
+    # ── private ────────────────────────────────────────────────────────
+    def _refill(self) -> None:
+        """ディスクから全ファイルを再取得してシャッフルし、山札を補充する。"""
+        paths = glob.glob(
+            os.path.join(self._root, self._pattern), recursive=True
+        )
+        random.shuffle(paths)
+        self._deck = paths
+
+    # ── public ─────────────────────────────────────────────────────────
+    def draw(self) -> str:
+        """
+        山札から1枚取り出して返す。
+        山札が空の場合は自動補充してから取り出す。
+        ファイルが1枚も存在しない場合は空文字を返す。
+        """
+        if not self._deck:
+            self._refill()
+        return self._deck.pop() if self._deck else ""
+
+    def __len__(self) -> int:
+        return len(self._deck)
+
+    def __repr__(self) -> str:
+        return f"ImageDeck(root={self._root!r}, remaining={len(self._deck)})"
+
+
+# デッキをモジュールスコープで初期化（スライドループ全体で状態を保持）
+_all_deck   = ImageDeck(_ALL_DIR)
+_stock_deck = ImageDeck(_STOCK_DIR)
+_bg_deck    = ImageDeck(_BACKGROUNDS_DIR, pattern="*.png")
+
+# テンプレートタイプ → 使用デッキのマッピング
+_TEMPLATE_DECK: dict[str, ImageDeck] = {
+    "title":       _all_deck,
+    "impact":      _all_deck,
+    "template_Sl": _all_deck,
+    "template_Sr": _all_deck,
+    "template_Td": _bg_deck,
+    "template_Tu": _bg_deck,
+    "template_Ar": _stock_deck,
+    "template_Al": _stock_deck,
+}
+
+
 def _resolve_image(image_path: str) -> str:
     """
-    image_path を以下の順で探索し、最初に見つかった絶対パスを返す。
+    明示的に指定された image_path を以下の順で探索し、最初に見つかった絶対パスを返す。
       1. OUTPUT_DIR (projects/{PROJECT_NAME}/slides/)
       2. stock/ の各サブディレクトリ
       3. backgrounds/
-    どこにも見つからない場合は stock/chart から1枚をランダムに返す。
+    どこにも見つからない場合は空文字を返す（呼び出し元でデッキフォールバックを行う）。
     """
-    import glob as _glob
+    fname = os.path.basename(image_path)
 
-    if not image_path:
-        pass  # フォールバックへ
-    else:
-        fname = os.path.basename(image_path)
+    # 1. OUTPUT_DIR
+    candidate = os.path.join(OUTPUT_DIR, fname)
+    if os.path.exists(candidate):
+        return candidate
 
-        # 1. OUTPUT_DIR
-        candidate = os.path.join(OUTPUT_DIR, fname)
-        if os.path.exists(candidate):
-            return candidate
+    # 2. stock/ 各サブディレクトリ
+    if os.path.isdir(_STOCK_DIR):
+        for cat in sorted(os.listdir(_STOCK_DIR)):
+            candidate = os.path.join(_STOCK_DIR, cat, fname)
+            if os.path.exists(candidate):
+                return candidate
 
-        # 2. stock/ 各サブディレクトリ
-        if os.path.isdir(_STOCK_DIR):
-            for cat in sorted(os.listdir(_STOCK_DIR)):
-                candidate = os.path.join(_STOCK_DIR, cat, fname)
-                if os.path.exists(candidate):
-                    return candidate
+    # 3. backgrounds/
+    candidate = os.path.join(_BACKGROUNDS_DIR, fname)
+    if os.path.exists(candidate):
+        return candidate
 
-        # 3. backgrounds/
-        candidate = os.path.join(_BACKGROUNDS_DIR, fname)
-        if os.path.exists(candidate):
-            return candidate
-
-    # フォールバック: stock/chart からランダム1枚
-    fallback_pool = _glob.glob(os.path.join(_STOCK_DIR, "**", "*.png"), recursive=True)
-    if fallback_pool:
-        return random.choice(fallback_pool)
     return ""
 
 
@@ -187,7 +260,7 @@ def _call_render(mod, slide: dict, output_path: str) -> None:
     color       = mod.hex_to_rgb(slide.get("color_hex", "#ffffff"))
 
     # タイトル: 表示用の短いキーを優先し、最後に narration の一文を保険として使う
-    title = (
+    title = _clean_display_text(
         slide.get("section_title")
         or slide.get("catch_copy")
         or slide.get("subtitle")
@@ -196,7 +269,7 @@ def _call_render(mod, slide: dict, output_path: str) -> None:
     )
 
     # 本文: 画面表示用の短テキストを優先し、narration しかない場合は最初の一文だけ抽出
-    raw = (
+    raw = _clean_display_text(
         slide.get("content_bullets")
         or slide.get("body_text")
         or slide.get("body")
@@ -204,11 +277,16 @@ def _call_render(mod, slide: dict, output_path: str) -> None:
     )
 
     _raw_image_path = slide.get("image_path", "")
-    if tmpl in ("template_Tu", "template_Td") and not _raw_image_path:
-        import glob as _glob
-        _bg_pool = _glob.glob(os.path.join(_BACKGROUNDS_DIR, "*.png"))
-        _raw_image_path = random.choice(_bg_pool) if _bg_pool else ""
-    img         = _resolve_image(_raw_image_path)
+    if _raw_image_path:
+        # JSON で明示指定あり → パス解決を試みる。見つからなければデッキフォールバック
+        img = _resolve_image(_raw_image_path)
+        if not img:
+            deck = _TEMPLATE_DECK.get(tmpl)
+            img = deck.draw() if deck else ""
+    else:
+        # 指定なし → テンプレートタイプに対応したデッキから非復元抽出
+        deck = _TEMPLATE_DECK.get(tmpl)
+        img = deck.draw() if deck else ""
     footer      = slide.get("footer_text", "")
     part_marker = slide.get("_part_marker", "")
 
