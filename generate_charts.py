@@ -3,7 +3,7 @@
 generate_charts.py — 株価・財務チャート全自動生成スクリプト
 yfinance でデータ取得 → ダークモード PNG (1920×1080) を出力する。
 
-出力先: outputs/images/stock/charts/
+出力先: outputs/assets
   multi_timeframe_chart.png
   financial_trend_bar.png
   competitor_heatmap.png
@@ -46,7 +46,7 @@ import yfinance as yf
 
 # ── 出力先 ──────────────────────────────────────────────────────────────────
 HERE    = os.path.dirname(os.path.abspath(__file__))
-OUT_DIR = os.path.join(HERE, "outputs", "images", "stock", "charts")
+OUT_DIR = os.path.join(HERE, "outputs", "assets", "charts")
 os.makedirs(OUT_DIR, exist_ok=True)
 
 # ── カラーパレット（ダークモード） ──────────────────────────────────────────
@@ -130,6 +130,14 @@ def multi_timeframe_chart(ticker: str) -> str:
     name = _safe(info, "shortName", "longName", default=ticker)
     price_sym, price_unit = _currency_info(info)
 
+    # リアルタイム最新価格の取得（429対策で fast_info を優先）
+    try:
+        realtime_price = sym.fast_info.last_price
+    except Exception:
+        realtime_price = None
+    if not realtime_price:
+        realtime_price = info.get("currentPrice") or info.get("regularMarketPrice")
+
     df_d = sym.history(period="3mo", interval="1d").dropna(subset=["Close"])
     df_w = sym.history(period="3y",  interval="1wk").dropna(subset=["Close"])
 
@@ -140,8 +148,8 @@ def multi_timeframe_chart(ticker: str) -> str:
     ax2 = fig.add_subplot(gs[1])
     _apply_dark(fig, [ax1, ax2])
 
-    def _plot_panel(ax, df, ma_specs, title):
-        close = df["Close"]
+    def _plot_panel(ax, df, ma_specs, title, realtime_price=None):
+        close = df["Close"].copy()
         dates = df.index
         if len(close) == 0:
             ax.text(0.5, 0.5, "データなし", transform=ax.transAxes,
@@ -149,7 +157,12 @@ def multi_timeframe_chart(ticker: str) -> str:
             ax.set_title(title, fontsize=13, pad=8, color=TEXT)
             return
 
-        trend_col = UP if close.iloc[-1] >= close.iloc[0] else DOWN
+        # チャート線の終点を最新価格で補正
+        if realtime_price:
+            close.iloc[-1] = realtime_price
+        last = realtime_price if realtime_price else close.iloc[-1]
+
+        trend_col = UP if last >= close.iloc[0] else DOWN
 
         # 終値ライン + エリア塗り
         ax.fill_between(dates, close, close.min() * 0.975,
@@ -178,8 +191,7 @@ def multi_timeframe_chart(ticker: str) -> str:
                     bbox=dict(boxstyle="round,pad=0.2", facecolor=BG3,
                               edgecolor=DOWN, alpha=0.85))
 
-        # 直近終値を余白（右上）に大きく表示
-        last = close.iloc[-1]
+        # 最新価格（リアルタイム）を右上に大きく表示
         ax.text(0.98, 0.92, f"{price_sym}{last:,.0f}",
                 transform=ax.transAxes, ha="right", va="top",
                 color=trend_col, fontsize=34, fontweight="bold", alpha=0.92,
@@ -197,8 +209,8 @@ def multi_timeframe_chart(ticker: str) -> str:
     ma_day  = [(25, MA25_C, "MA25"), (120, MA120_C, "MA120")]
     ma_week = [(25, MA25_C, "MA25"), (120, MA120_C, "MA120")]
 
-    _plot_panel(ax1, df_d, ma_day,  "日足チャート（過去3ヶ月）")
-    _plot_panel(ax2, df_w, ma_week, "週足チャート（過去3年）")
+    _plot_panel(ax1, df_d, ma_day,  "日足チャート（過去3ヶ月）", realtime_price)
+    _plot_panel(ax2, df_w, ma_week, "週足チャート（過去3年）",   realtime_price)
 
     mc = _safe(info, "marketCap")
     mc_str = (f"時価総額: {price_sym}{mc / 1e8:,.0f}億"

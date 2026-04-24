@@ -206,7 +206,7 @@ def draw_text_area(canvas: Image.Image, draw: ImageDraw.ImageDraw,
 
     f_header  = load_font(FONT_MEDIUM, 30)
     f_title   = autofit_font(title, FONT_BOLD, 88, MAX_TW, draw, min_size=44)
-    f_bullet  = load_font(FONT_MEDIUM, 42)
+    f_bullet  = load_font(FONT_MEDIUM, 48)
 
     # 1. パートヘッダー（鮮やかカラー）
     HEADER_Y = 88
@@ -228,8 +228,8 @@ def draw_text_area(canvas: Image.Image, draw: ImageDraw.ImageDraw,
 
     # 4. 箇条書き（マーカー = 鮮やかカラー、本文 = 白）
     bul_y      = DIV_Y + 44
-    LINE_GAP   = 6    # 同一箇条書き内の折り返し行間
-    BUL_MARGIN = 28   # 箇条書き要素間の余白（1行時の合計が旧 BUL_GAP=82 と同等になる値）
+    LINE_GAP   = 10   # 同一箇条書き内の折り返し行間
+    BUL_MARGIN = 56   # 箇条書き要素間の余白（画面下スカスカ解消のため2倍に拡大）
     b_h        = text_h("あ", f_bullet, draw)
 
     for item in bullets:
@@ -309,15 +309,33 @@ def _s_strip(s: str) -> str:
 def _parse_s_content(raw: str) -> tuple[str, str, str]:
     """
     content_bullets を (price, price_label, body) に分解する。
-    入力フォーマット（\\n 区切り）:
+
+    3行構成（通常）:
       行0: 価格テキスト   例: "4,329円"  ← ●があっても自動除去
       行1: 価格ラベル     例: "現在株価"
       行2〜: 説明文（複数行は空白で結合して1文にする）
+
+    2行構成（フォールバック）:
+      行0: 見出し（price_label として使用）
+      行1: 本文（body として使用）
+      price は空文字になる
     """
     lines = raw.split("\\n") if "\\n" in raw else raw.split("\n")
-    price       = _s_strip(lines[0]) if len(lines) > 0 else ""
-    price_label = _s_strip(lines[1]) if len(lines) > 1 else ""
-    body        = " ".join(_s_strip(l) for l in lines[2:] if l.strip())
+    lines = [l for l in lines if l.strip()]  # 空行除去
+
+    if len(lines) >= 3:
+        price       = _s_strip(lines[0])
+        price_label = _s_strip(lines[1])
+        body        = "\n".join(_s_strip(l) for l in lines[2:] if l.strip())
+    elif len(lines) == 2:
+        price       = ""
+        price_label = _s_strip(lines[0])
+        body        = _s_strip(lines[1])
+    else:
+        price       = _s_strip(lines[0]) if lines else ""
+        price_label = ""
+        body        = ""
+
     return price, price_label, body
 
 
@@ -363,7 +381,7 @@ def _draw_s_text_panel(canvas: Image.Image, draw: ImageDraw.ImageDraw,
     f_title  = autofit_font(title,  FONT_BOLD,  70, MAX_TW, draw, min_size=44)
     f_price  = autofit_font(price,  FONT_BOLD, 120, MAX_TW, draw, min_size=72)
     f_label  = _s_body_font(28)    # Light体（価格ラベル）
-    f_body   = _s_body_font(38)    # Light体（本文）
+    f_body   = _s_body_font(44)    # Light体（本文）
 
     # ── [A-0] パネル背景 #1a1a1a ─────────────
     draw.rectangle([PX0, 0, PX1, H], fill=(26, 26, 26))
@@ -386,27 +404,36 @@ def _draw_s_text_panel(canvas: Image.Image, draw: ImageDraw.ImageDraw,
     draw.rectangle([PX0, y, PX1, y + 2], fill=WHITE)
     y += 2 + 54
 
-    # ── [B-1] 価格（極太・120px+・白）──────
-    draw.text((TXT_L, y), price, font=f_price, fill=WHITE)
-    y += text_h(price, f_price, draw) + 12
+    # ── [B-1] 価格（極太・120px+・白）── price が空の場合はスキップ
+    if price:
+        draw.text((TXT_L, y), price, font=f_price, fill=WHITE)
+        y += text_h(price, f_price, draw) + 12
 
-    # ── [B-2] 価格ラベル（Light・28px・グレー）
-    draw.text((TXT_L, y), price_label, font=f_label, fill=GRAY_MID)
-    y += text_h(price_label, f_label, draw) + 32
+    # ── [B-2] 価格ラベル / 見出し（Light・28px・グレー）
+    if price_label:
+        draw.text((TXT_L, y), price_label, font=f_label, fill=GRAY_MID)
+        y += text_h(price_label, f_label, draw) + 32
 
     # ── [B-3] 区切り線（内側余白内のみ）──────
     draw.rectangle([TXT_L, y, TXT_R, y + 1], fill=(55, 55, 55))
     y += 1 + 40
 
-    # ── [C] 本文（Light・38px・行間2.0倍・はみ出し防止）
-    b_h     = text_h("あ", f_body, draw)
-    LEADING = int(b_h * 2.0)
+    # ── [C] 本文（Light・44px・行間2.0倍・段落間GAP付き・はみ出し防止）
+    b_h           = text_h("あ", f_body, draw)
+    LEADING       = int(b_h * 2.0)
+    PARAGRAPH_GAP = int(b_h * 1.2)   # 段落（\n区切り）間の追加余白
 
-    for ln in wrap_jp(body, f_body, MAX_TW, draw):
-        if y + b_h > CLIP_Y:
-            break
-        draw.text((TXT_L, y), ln, font=f_body, fill=WHITE)
-        y += LEADING
+    paragraphs = body.split("\n") if body else []
+    for pi, para in enumerate(paragraphs):
+        if not para.strip():
+            continue
+        for ln in wrap_jp(para, f_body, MAX_TW, draw):
+            if y + b_h > CLIP_Y:
+                break
+            draw.text((TXT_L, y), ln, font=f_body, fill=WHITE)
+            y += LEADING
+        if pi < len(paragraphs) - 1:
+            y += PARAGRAPH_GAP
 
 
 def _draw_s_image_panel(canvas: Image.Image, draw: ImageDraw.ImageDraw,
@@ -796,7 +823,7 @@ def render_grid(output_path: str, part_marker: str,
     CARD_GAP   = 22    # カード間隔
     HEADER_H   = 148   # part_marker + title エリア
     FOOTER_H   = 80    # フッターエリア高
-    CARD_PAD   = 44    # カード内パディング
+    CARD_PAD   = 36    # カード内パディング
 
     card_w = (W - OUTER_PAD * 2 - CARD_GAP * 2) // 3   # ≈592px
     CARD_Y0 = HEADER_H + 18
@@ -827,8 +854,8 @@ def render_grid(output_path: str, part_marker: str,
     f_part    = load_font(FONT_MEDIUM, 28)
     f_title   = autofit_font(title, FONT_BOLD, 72, W - OUTER_PAD * 2, draw, min_size=40)
     f_num     = load_font(FONT_BOLD,   46)
-    f_heading = load_font(FONT_BOLD,   46)
-    f_detail  = load_font(FONT_REG,    34)
+    f_heading = load_font(FONT_BOLD,   56)
+    f_detail  = load_font(FONT_REG,    42)
     f_footer  = load_font(FONT_MEDIUM, 32)
 
     # ── 1. パートマーカー ─────────────────────
@@ -843,10 +870,10 @@ def render_grid(output_path: str, part_marker: str,
 
     # ── 3. 各カード描画 ──────────────────────
     CIRCLE_R      = 40      # 円アイコン半径
-    CONTENT_TOP   = 80      # カード上端から円上端までの固定パディング
-    CIRC_HEAD_GAP = 38      # 円〜見出し間
-    HEAD_SEP_GAP  = 28      # 見出し〜区切りライン間
-    SEP_DET_GAP   = 28      # 区切りライン〜本文1行目まで
+    CONTENT_TOP   = 68      # カード上端から円上端までの固定パディング
+    CIRC_HEAD_GAP = 32      # 円〜見出し間
+    HEAD_SEP_GAP  = 22      # 見出し〜区切りライン間
+    SEP_DET_GAP   = 22      # 区切りライン〜本文1行目まで
 
     # フォント高（ループ前に計算）
     h_lh = text_h("あ", f_heading, draw)
@@ -854,7 +881,7 @@ def render_grid(output_path: str, part_marker: str,
     d_max = card_w - CARD_PAD * 2
 
     # ── Leading 定数 ─────────────────────────
-    LEADING = int(d_lh * 2.0)   # 全行共通のLeading（cinematic）
+    LEADING = int(d_lh * 1.55)  # 全行共通のLeading
 
     for i, (heading, details) in enumerate(cards_data):
         cx0 = card_x0s[i]
