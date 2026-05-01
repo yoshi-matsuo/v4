@@ -1,25 +1,25 @@
 
-python3 slide_engine_v4.py 日東紡績_3110
+python3 slide_engine_v4.py 三菱商事_8058.T
 
 
-python3 narration_engine_v4.py 日東紡績_3110
+python3 narration_engine_v4.py 三菱商事_8058.T
 
 python3 fact_fetcher.py
 python3 merge_script.py
 
-python3 generate_charts.py 3110.T 5214.T 5201.T 4063.T
+python3 generate_charts.py 8058.T  8001.T 8031 
 
-python3 generate_charts.py TXN ADI NXPI STM
+python3 generate_charts.py 8058.T LITE IPGP
 
 
 source .venv/bin/activate
 
 
 以下の最新ファクトと添付の企業レポートを元に、あなたに設定された「全7幕構成のルール」に厳密に従って、JSON台本を出力してください。まずはPart 1からPart4まで書いてください
-3110　日東紡績　4月24日引け後
-株価27380円　+7.16%　
-時価総1兆円　PE69.68倍　PBR6　利回り0.4　
-比較銘柄ティッカー　5214 5201 4063
+三菱商事  8058　5月1日引け後　本日場中決算発表
+株価5219円　前日比＋4.59%
+時価総19.37兆円　PER26.5倍　PBR2.1　利回り2.1%　
+比較銘柄ティッカー 8001.T 8031.T	
 
 
 続いてPart5からPart7まで書いてください
