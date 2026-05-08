@@ -1,27 +1,38 @@
 
-python3 slide_engine_v4.py 三菱商事_8058.T
+python3 slide_engine_v4.py 太陽誘電_6976.T
 
 
-python3 narration_engine_v4.py 三菱商事_8058.T
+python3 narration_engine_v4.py 太陽誘電_6976.T
 
 python3 fact_fetcher.py
 python3 merge_script.py
 
-python3 generate_charts.py 8058.T  8001.T 8031 
+python3 generate_charts.py 6976.T 6981.T 6762.T 
 
-python3 generate_charts.py 8058.T LITE IPGP
+python3 generate_charts.py ARM 6981　
 
 
 source .venv/bin/activate
 
 
 以下の最新ファクトと添付の企業レポートを元に、あなたに設定された「全7幕構成のルール」に厳密に従って、JSON台本を出力してください。まずはPart 1からPart4まで書いてください
-三菱商事  8058　5月1日引け後　本日場中決算発表
-株価5219円　前日比＋4.59%
-時価総19.37兆円　PER26.5倍　PBR2.1　利回り2.1%　
-比較銘柄ティッカー 8001.T 8031.T	
+6976  太陽誘電　5月8日引け後　※本日引け後決算発表
+株価6,663円　前日比＋0.5%
+時価総8676億円　PER64倍　PBR2.46　利回り1.35%　
+比較銘柄ティッカー 6981 6762
 
 
 続いてPart5からPart7まで書いてください
 
 
+今回は新たな全然違う番組です。
+心機一転でyoutube番組のサムネお願いします。
+別の会社です。（大）（小）の文字は大きさを指示しているだけなので、表示しないでください。
+スーツ姿の商社マンが石油取引や小麦取引、世界中で交渉している
+テキスト
+（大）
+三菱商事
+最終利益37.4％増！
+（小）
+Stock Arena
+株式投資の迷宮
