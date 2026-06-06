@@ -1,13 +1,13 @@
 
-python3 slide_engine_v4.py さくらインターネット_3778
+python3 slide_engine_v4.py ローツェ_6323
 
 
-python3 narration_engine_v4.py さくらインターネット_3778
+python3 narration_engine_v4.py ローツェ_6323
 
 python3 fact_fetcher.py
 python3 merge_script.py
 
-python3 generate_charts.py 3778.T 3774.T 9449.T
+python3 generate_charts.py 6323.T 6258.T 6383.T
 
 python3 generate_charts.py 6361 CRWV IREN　
 
@@ -16,21 +16,21 @@ source .venv/bin/activate
 
 
 以下の最新ファクトと添付の企業レポートを元に、あなたに設定された「全7幕構成のルール」に厳密に従って、JSON台本を出力してください。まずはPart 1からPart4まで書いてください
-3778　さくらインターネット　6月5日引け後　
-株価2878円　前日比-1.61%
-時価総1,220億円　PER137倍　PBR3.87　利回り0.19%　
-比較銘柄ティッカー 3774.T 9449.T
+6323　ローツェ　6月5日引け後　
+株価4229円　前日比-4.41%
+時価総7460億円　PER26.4倍　PBR5.63　利回り0.47%　
+比較銘柄ティッカー 6258.T 6383.T
 
 続いてPart5からPart7まで書いてください
 
 
 今回は新たな全然違う番組です。今までの画像の影響を受けないでください。
 心機一転でyoutube番組のサムネお願いします。（大）（小）は文字サイズの指示をしているだけなので表示しないでください
-日の丸をバックにデータセンターにサーバやケーブルなどを設置運用している技術者たち。
+最先端の工場で半導体ウエハーにガラスコーティングしている技術者たち
 テキスト
 （大）
-さくらインターネット
-国産データセンターの要
+ローツェ
+半導体テーマの恩恵で最高値伺う
 （小）
 Stock Arena
 株式投資の迷宮
