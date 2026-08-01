@@ -433,7 +433,8 @@ def _clean_for_tts(text: str) -> str:
     text = re.sub(r'^#+\s*', '', text, flags=re.MULTILINE)
     text = re.sub(r'(\d),(\d)', r'\1\2', text)          # 数字カンマ除去
     text = re.sub(r'[——―]+', '。', text)                 # 長いダッシュ → 句点
-    text = re.sub(r'[……\.]{2,}', '。', text)             # 三点リーダー → 句点
+    text = re.sub(r'…+', '。', text)                     # 三点リーダー(…) → 句点（1個でも対象）
+    text = re.sub(r'\.{2,}', '。', text)                  # ドット3連(...) → 句点（小数点は対象外）
     text = re.sub(r'\n{3,}', '\n\n', text)               # 過剰空行を縮小
     return text.strip()
 
