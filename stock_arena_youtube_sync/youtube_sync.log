@@ -1,0 +1,492 @@
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 105本
+[OK] 最新動画: 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る
+[OK] Analytics最新確定日: 2026-08-12
+[INFO] Analytics処理: 20/105
+[INFO] Analytics処理: 40/105
+[INFO] Analytics処理: 60/105
+[INFO] Analytics処理: 80/105
+[INFO] Analytics処理: 100/105
+
+[完了] stock_arena_history.csv: 105本
+[完了] stock_arena_youtube_performance.csv: 105本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 102本
+[OK] 最新動画: 2026-08-14 / 【アシックス】上方修正で株価急騰！営業利益率22.5%の衝撃と「PER30倍」が織り込む成長シナリオ
+[OK] Analytics最新確定日: 2026-08-12
+[INFO] Analytics処理: 20/102
+[INFO] Analytics処理: 40/102
+[INFO] Analytics処理: 60/102
+[INFO] Analytics処理: 80/102
+[INFO] Analytics処理: 100/102
+
+[完了] stock_arena_history.csv: 102本
+[完了] stock_arena_youtube_performance.csv: 102本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 102本
+[OK] 最新動画: 2026-08-14 / 【アシックス】上方修正で株価急騰！営業利益率22.5%の衝撃と「PER30倍」が織り込む成長シナリオ
+[OK] Analytics最新確定日: 2026-08-12
+[INFO] Analytics処理: 20/102
+[INFO] Analytics処理: 40/102
+[INFO] Analytics処理: 60/102
+[INFO] Analytics処理: 80/102
+[INFO] Analytics処理: 100/102
+
+[完了] stock_arena_history.csv: 102本
+[完了] stock_arena_youtube_performance.csv: 102本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[WARN] Data API metadata未返却の既知動画: 2本
+[INFO] baselineから補完:  -KMuetmIAs0 | 東京エレクトロンデバイスの深層：利益率1.3%の主力事業。決算前に立ちはだかる「3,400円のしこり玉」
+[INFO] baselineから補完:  -qTAD9VNJHg | 【暴落中】ストップ安の「楽天銀行」、大底はどこ？ 悪材料より厄介な「252万株の罠」とプロが狙う反発シナリオ
+[OK] STOCK ARENA長尺動画: 104本
+[OK] 最新動画: 2026-08-14 / 【アシックス】上方修正で株価急騰！営業利益率22.5%の衝撃と「PER30倍」が織り込む成長シナリオ
+[OK] Analytics最新確定日: 2026-08-12
+[INFO] Analytics処理: 20/104
+[INFO] Analytics処理: 40/104
+[WARN] Analytics取得失敗  -qTAD9VNJHg: <HttpError 400 when requesting https://youtubeanalytics.googleapis.com/v2/reports?ids=channel%3D%3DMINE&startDate=2026-05-21&endDate=2026-08-12&metrics=views%2CestimatedMinutesWatched%2CaverageViewDuration%2CaverageViewPercentage%2CsubscribersGained%2CsubscribersLost&filters=video%3D%3D+-qTAD9VNJHg&alt=json returned "Invalid value ( -qTAD9VNJHg) given in field parameters.filters.". Details: "[{'message': 'Invalid value ( -qTAD9VNJHg) given in field parameters.filters.', 'domain': 'global', 'reason': 'invalid'}]">
+[INFO] Analytics処理: 60/104
+[WARN] Analytics取得失敗  -KMuetmIAs0: <HttpError 400 when requesting https://youtubeanalytics.googleapis.com/v2/reports?ids=channel%3D%3DMINE&startDate=2026-04-24&endDate=2026-08-12&metrics=views%2CestimatedMinutesWatched%2CaverageViewDuration%2CaverageViewPercentage%2CsubscribersGained%2CsubscribersLost&filters=video%3D%3D+-KMuetmIAs0&alt=json returned "Invalid value ( -KMuetmIAs0) given in field parameters.filters.". Details: "[{'message': 'Invalid value ( -KMuetmIAs0) given in field parameters.filters.', 'domain': 'global', 'reason': 'invalid'}]">
+[INFO] Analytics処理: 80/104
+[INFO] Analytics処理: 100/104
+
+[完了] stock_arena_history.csv: 104本
+[完了] stock_arena_youtube_performance.csv: 104本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 103本
+[OK] 最新動画: 2026-08-14 / 【アシックス】上方修正で株価急騰！営業利益率22.5%の衝撃と「PER30倍」が織り込む成長シナリオ
+[OK] Analytics最新確定日: 2026-08-12
+[INFO] Analytics処理: 20/103
+[INFO] Analytics処理: 40/103
+[INFO] Analytics処理: 60/103
+[INFO] Analytics処理: 80/103
+[INFO] Analytics処理: 100/103
+
+[完了] stock_arena_history.csv: 103本
+[完了] stock_arena_youtube_performance.csv: 103本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 103本
+[OK] 最新動画: 2026-08-14 / 【アシックス】上方修正で株価急騰！営業利益率22.5%の衝撃と「PER30倍」が織り込む成長シナリオ
+[OK] Analytics最新確定日: 2026-08-12
+[INFO] Analytics処理: 20/103
+[INFO] Analytics処理: 40/103
+[INFO] Analytics処理: 60/103
+[INFO] Analytics処理: 80/103
+[INFO] Analytics処理: 100/103
+[WARN] Candidate Scout Cloud同期失敗: name 'requests' is not defined
+
+[完了] stock_arena_history.csv: 103本
+[完了] stock_arena_youtube_performance.csv: 103本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 103本
+[OK] 最新動画: 2026-08-14 / 【アシックス】上方修正で株価急騰！営業利益率22.5%の衝撃と「PER30倍」が織り込む成長シナリオ
+[OK] Analytics最新確定日: 2026-08-12
+[OK] Reach日次データを更新: 2780行読み込み
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 103本
+[OK] 最新動画: 2026-08-14 / 【アシックス】上方修正で株価急騰！営業利益率22.5%の衝撃と「PER30倍」が織り込む成長シナリオ
+[OK] Analytics最新確定日: 2026-08-13
+[OK] Reach日次データを更新: 2780行読み込み
+===== 2026-08-16 11:30:17 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 104本
+[OK] 最新動画: 2026-08-16 / 【テスホールディングス】受注残436億円でなぜ株価急落？営業減益を招いた「利益先送り」と信用買残リスク
+[OK] Analytics最新確定日: 2026-08-13
+[OK] Reach日次データを更新: 2667行読み込み
+[INFO] Analytics処理: 20/104
+[INFO] Analytics処理: 40/104
+[INFO] Analytics処理: 60/104
+[INFO] Analytics処理: 80/104
+[WARN] Analytics取得失敗 BvnWdTTwSys: <HttpError 500 when requesting https://youtubeanalytics.googleapis.com/v2/reports?ids=channel%3D%3DMINE&startDate=2026-04-13&endDate=2026-08-13&metrics=views%2CestimatedMinutesWatched%2CaverageViewDuration%2CaverageViewPercentage%2CsubscribersGained%2CsubscribersLost&filters=video%3D%3DBvnWdTTwSys&alt=json returned "Internal error encountered.". Details: "[{'message': 'Internal error encountered.', 'domain': 'global', 'reason': 'backendError'}]">
+[INFO] Analytics処理: 100/104
+[OK] Candidate Scout Cloud同期: history=104 / performance=104
+
+[完了] stock_arena_history.csv: 104本
+[完了] stock_arena_youtube_performance.csv: 104本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-16 11:31:33 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 2本
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-13
+[OK] NEXT Reach日次データを更新: 2行読み込み
+[OK] NEXT投資ワード Cloud同期: history=2 / performance=2
+
+[完了] next_investment_word_history.csv: 2本
+[完了] next_investment_word_youtube_performance.csv: 2本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-16 17:32:04 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 104本
+[OK] 最新動画: 2026-08-16 / 【テスホールディングス】受注残436億円でなぜ株価急落？営業減益を招いた「利益先送り」と信用買残リスク
+[OK] Analytics最新確定日: 2026-08-13
+[OK] Reach日次データを更新: 2875行読み込み
+[INFO] Analytics処理: 20/104
+[INFO] Analytics処理: 40/104
+[INFO] Analytics処理: 60/104
+[INFO] Analytics処理: 80/104
+[INFO] Analytics処理: 100/104
+[OK] Candidate Scout Cloud同期: history=104 / performance=104
+
+[完了] stock_arena_history.csv: 104本
+[完了] stock_arena_youtube_performance.csv: 104本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-16 17:33:26 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 3本
+  - 2026-08-16 / AI攻撃の自動化で何が変わる？ 次に企業が払う「AIの警備費」｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-13
+[OK] NEXT Reach日次データを更新: 4行読み込み
+[OK] NEXT投資ワード Cloud同期: history=3 / performance=3
+
+[完了] next_investment_word_history.csv: 3本
+[完了] next_investment_word_youtube_performance.csv: 3本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-17 06:52:32 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 104本
+[OK] 最新動画: 2026-08-16 / 【テスホールディングス】受注残436億円でなぜ株価急落？営業減益を招いた「利益先送り」と信用買残リスク
+[OK] Analytics最新確定日: 2026-08-14
+[OK] Reach日次データを更新: 2967行読み込み
+[INFO] Analytics処理: 20/104
+[INFO] Analytics処理: 40/104
+[INFO] Analytics処理: 60/104
+[INFO] Analytics処理: 80/104
+[INFO] Analytics処理: 100/104
+[OK] Candidate Scout Cloud同期: history=104 / performance=104
+
+[完了] stock_arena_history.csv: 104本
+[完了] stock_arena_youtube_performance.csv: 104本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-17 07:03:02 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 3本
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-14
+[OK] NEXT Reach日次データを更新: 4行読み込み
+[OK] NEXT投資ワード Cloud同期: history=3 / performance=3
+
+[完了] next_investment_word_history.csv: 3本
+[完了] next_investment_word_youtube_performance.csv: 3本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-17 13:03:51 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 104本
+[OK] 最新動画: 2026-08-16 / 【テスホールディングス】受注残436億円でなぜ株価急落？営業減益を招いた「利益先送り」と信用買残リスク
+[OK] Analytics最新確定日: 2026-08-14
+[OK] Reach日次データを更新: 2967行読み込み
+[INFO] Analytics処理: 20/104
+[INFO] Analytics処理: 40/104
+[INFO] Analytics処理: 60/104
+[INFO] Analytics処理: 80/104
+[INFO] Analytics処理: 100/104
+[OK] Candidate Scout Cloud同期: history=104 / performance=104
+
+[完了] stock_arena_history.csv: 104本
+[完了] stock_arena_youtube_performance.csv: 104本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-17 13:05:38 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 3本
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-14
+[OK] NEXT Reach日次データを更新: 4行読み込み
+[OK] NEXT投資ワード Cloud同期: history=3 / performance=3
+
+[完了] next_investment_word_history.csv: 3本
+[完了] next_investment_word_youtube_performance.csv: 3本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-17 19:06:25 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 105本
+[OK] 最新動画: 2026-08-17 / 【テラプローブ】最高益予想なのに下落、その夜に売上+62.6%。テラプローブで何が起きている？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-14
+[OK] Reach日次データを更新: 3175行読み込み
+[INFO] Analytics処理: 20/105
+[INFO] Analytics処理: 40/105
+[INFO] Analytics処理: 60/105
+[INFO] Analytics処理: 80/105
+[INFO] Analytics処理: 100/105
+[OK] Candidate Scout Cloud同期: history=105 / performance=105
+
+[完了] stock_arena_history.csv: 105本
+[完了] stock_arena_youtube_performance.csv: 105本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-17 19:07:57 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 3本
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-14
+[WARN] Reachレポート取得待ち: <HttpError 500 when requesting https://youtubereporting.googleapis.com/v1/jobs/25f56805-ba17-4d47-bf73-feb56e6c2579/reports?pageSize=100&alt=json returned "Internal error encountered.". Details: "Internal error encountered.">
+[WARN] Analytics取得失敗 P5J1t9IV9xE: <HttpError 500 when requesting https://youtubeanalytics.googleapis.com/v2/reports?ids=channel%3D%3DMINE&startDate=2026-08-12&endDate=2026-08-14&metrics=views%2CestimatedMinutesWatched%2CaverageViewDuration%2CaverageViewPercentage%2CsubscribersGained%2CsubscribersLost&filters=video%3D%3DP5J1t9IV9xE&alt=json returned "Internal error encountered.". Details: "[{'message': 'Internal error encountered.', 'domain': 'global', 'reason': 'backendError'}]">
+[OK] NEXT投資ワード Cloud同期: history=3 / performance=3
+
+[完了] next_investment_word_history.csv: 3本
+[完了] next_investment_word_youtube_performance.csv: 3本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-18 07:03:18 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 105本
+[OK] 最新動画: 2026-08-17 / 【テラプローブ】最高益予想なのに下落、その夜に売上+62.6%。テラプローブで何が起きている？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-15
+[OK] Reach日次データを更新: 3175行読み込み
+[INFO] Analytics処理: 20/105
+[INFO] Analytics処理: 40/105
+[INFO] Analytics処理: 60/105
+[INFO] Analytics処理: 80/105
+[INFO] Analytics処理: 100/105
+[OK] Candidate Scout Cloud同期: history=105 / performance=105
+
+[完了] stock_arena_history.csv: 105本
+[完了] stock_arena_youtube_performance.csv: 105本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-18 07:13:26 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 3本
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-15
+[OK] NEXT Reach日次データを更新: 7行読み込み
+[OK] NEXT投資ワード Cloud同期: history=3 / performance=3
+
+[完了] next_investment_word_history.csv: 3本
+[完了] next_investment_word_youtube_performance.csv: 3本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-18 13:14:19 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 105本
+[OK] 最新動画: 2026-08-17 / 【テラプローブ】最高益予想なのに下落、その夜に売上+62.6%。テラプローブで何が起きている？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-15
+[OK] Reach日次データを更新: 3175行読み込み
+[INFO] Analytics処理: 20/105
+[INFO] Analytics処理: 40/105
+[INFO] Analytics処理: 60/105
+[INFO] Analytics処理: 80/105
+[INFO] Analytics処理: 100/105
+[OK] Candidate Scout Cloud同期: history=105 / performance=105
+
+[完了] stock_arena_history.csv: 105本
+[完了] stock_arena_youtube_performance.csv: 105本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-18 13:16:05 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 3本
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-15
+[OK] NEXT Reach日次データを更新: 7行読み込み
+[OK] NEXT投資ワード Cloud同期: history=3 / performance=3
+
+[完了] next_investment_word_history.csv: 3本
+[完了] next_investment_word_youtube_performance.csv: 3本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-18 21:33:02 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 106本
+[OK] 最新動画: 2026-08-18 / 【北川精機】次期売上100億円予想で純利益は+8%？PER52倍が織り込む「AI特需」と在庫リスクの真相｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-15
+[OK] Reach日次データを更新: 3175行読み込み
+[INFO] Analytics処理: 20/106
+[INFO] Analytics処理: 40/106
+[INFO] Analytics処理: 60/106
+[INFO] Analytics処理: 80/106
+[INFO] Analytics処理: 100/106
+[OK] Candidate Scout Cloud同期: history=106 / performance=106
+
+[完了] stock_arena_history.csv: 106本
+[完了] stock_arena_youtube_performance.csv: 106本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-18 21:43:21 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 4本
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-15
+[OK] NEXT Reach日次データを更新: 7行読み込み
+[OK] NEXT投資ワード Cloud同期: history=4 / performance=4
+
+[完了] next_investment_word_history.csv: 4本
+[完了] next_investment_word_youtube_performance.csv: 4本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-19 05:49:49 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 106本
+[OK] 最新動画: 2026-08-18 / 【北川精機】次期売上100億円予想で純利益は+8%？PER52倍が織り込む「AI特需」と在庫リスクの真相｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-16
+[OK] Reach日次データを更新: 3175行読み込み
+[INFO] Analytics処理: 20/106
+[INFO] Analytics処理: 40/106
+[INFO] Analytics処理: 60/106
+[INFO] Analytics処理: 80/106
+[INFO] Analytics処理: 100/106
+[OK] Candidate Scout Cloud同期: history=106 / performance=106
+
+[完了] stock_arena_history.csv: 106本
+[完了] stock_arena_youtube_performance.csv: 106本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-19 06:02:31 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 4本
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-16
+[OK] NEXT Reach日次データを更新: 7行読み込み
+[OK] NEXT投資ワード Cloud同期: history=4 / performance=4
+
+[完了] next_investment_word_history.csv: 4本
+[完了] next_investment_word_youtube_performance.csv: 4本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-19 12:03:32 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 106本
+[OK] 最新動画: 2026-08-18 / 【北川精機】次期売上100億円予想で純利益は+8%？PER52倍が織り込む「AI特需」と在庫リスクの真相｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-16
+[OK] Reach日次データを更新: 3175行読み込み
+[INFO] Analytics処理: 20/106
+[INFO] Analytics処理: 40/106
+[INFO] Analytics処理: 60/106
+[INFO] Analytics処理: 80/106
+[INFO] Analytics処理: 100/106
+[OK] Candidate Scout Cloud同期: history=106 / performance=106
+
+[完了] stock_arena_history.csv: 106本
+[完了] stock_arena_youtube_performance.csv: 106本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-19 12:05:37 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 4本
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-16
+[OK] NEXT Reach日次データを更新: 7行読み込み
+[OK] NEXT投資ワード Cloud同期: history=4 / performance=4
+
+[完了] next_investment_word_history.csv: 4本
+[完了] next_investment_word_youtube_performance.csv: 4本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-19 18:06:20 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 107本
+[OK] 最新動画: 2026-08-19 / 【Abalance】ストップ高なのに「監査意見不表明」。営業利益161億円を市場はどう評価すべきか｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-16
+[OK] Reach日次データを更新: 3178行読み込み
+[INFO] Analytics処理: 20/107
+[WARN] Analytics取得失敗 Jlc-Jtd81o0: <HttpError 500 when requesting https://youtubeanalytics.googleapis.com/v2/reports?ids=channel%3D%3DMINE&startDate=2026-06-23&endDate=2026-06-29&metrics=views&dimensions=day&filters=video%3D%3DJlc-Jtd81o0&sort=day&alt=json returned "Internal error encountered.". Details: "[{'message': 'Internal error encountered.', 'domain': 'global', 'reason': 'backendError'}]">
+[INFO] Analytics処理: 40/107
+[INFO] Analytics処理: 60/107
+[INFO] Analytics処理: 80/107
+[INFO] Analytics処理: 100/107
+[OK] Candidate Scout Cloud同期: history=107 / performance=107
+
+[完了] stock_arena_history.csv: 107本
+[完了] stock_arena_youtube_performance.csv: 107本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-19 18:07:59 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 4本
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-16
+[OK] NEXT Reach日次データを更新: 10行読み込み
+[OK] NEXT投資ワード Cloud同期: history=4 / performance=4
+
+[完了] next_investment_word_history.csv: 4本
+[完了] next_investment_word_youtube_performance.csv: 4本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-20 06:55:15 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 107本
+[OK] 最新動画: 2026-08-19 / 【Abalance】ストップ高なのに「監査意見不表明」。営業利益161億円を市場はどう評価すべきか｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-17
+[OK] Reach日次データを更新: 3132行読み込み
+[INFO] Analytics処理: 20/107
+[INFO] Analytics処理: 40/107
+[INFO] Analytics処理: 60/107
+[INFO] Analytics処理: 80/107
+[INFO] Analytics処理: 100/107
+[OK] Candidate Scout Cloud同期: history=107 / performance=107
+
+[完了] stock_arena_history.csv: 107本
+[完了] stock_arena_youtube_performance.csv: 107本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-20 07:07:24 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 4本
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-17
+[OK] NEXT Reach日次データを更新: 13行読み込み
+[OK] NEXT投資ワード Cloud同期: history=4 / performance=4
+
+[完了] next_investment_word_history.csv: 4本
+[完了] next_investment_word_youtube_performance.csv: 4本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-20 13:08:30 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 107本
+[OK] 最新動画: 2026-08-19 / 【Abalance】ストップ高なのに「監査意見不表明」。営業利益161億円を市場はどう評価すべきか｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-17
+[OK] Reach日次データを更新: 3390行読み込み
+[INFO] Analytics処理: 20/107
+[INFO] Analytics処理: 40/107
+[INFO] Analytics処理: 60/107
+[INFO] Analytics処理: 80/107
+[INFO] Analytics処理: 100/107
+[OK] Candidate Scout Cloud同期: history=107 / performance=107
+
+[完了] stock_arena_history.csv: 107本
+[完了] stock_arena_youtube_performance.csv: 107本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-20 13:10:09 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 4本
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-17
+[OK] NEXT Reach日次データを更新: 13行読み込み
+[OK] NEXT投資ワード Cloud同期: history=4 / performance=4
+
+[完了] next_investment_word_history.csv: 4本
+[完了] next_investment_word_youtube_performance.csv: 4本
+===== NEXT投資ワード sync exit code: 0 =====
