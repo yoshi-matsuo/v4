@@ -787,14 +787,15 @@ def render_contrast(output_path: str, part_marker: str,
 # ─────────────────────────────────────────────
 def _parse_grid_content(raw: str) -> list[tuple[str, list[str]]]:
     """
-    "|" で3分割し、各セクションを (heading, [detail_lines]) に変換する。
+    "|" または "||" で3分割し、各セクションを (heading, [detail_lines]) に変換する。
     最初の非空行が見出し、残りが詳細テキスト。
+    生成元によって区切りが "|" と "||" のどちらでも出力されるため、"||" を "|" に正規化してから分割する。
     """
     def split_lines(s: str) -> list[str]:
         lines = s.split("\\n") if "\\n" in s else s.split("\n")
         return [l.strip() for l in lines if l.strip()]
 
-    sections = [s.strip() for s in raw.split("|")]
+    sections = [s.strip() for s in raw.replace("||", "|").split("|", 2)]
     while len(sections) < 3:
         sections.append("")
 
