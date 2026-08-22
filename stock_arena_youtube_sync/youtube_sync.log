@@ -490,3 +490,200 @@
 [完了] next_investment_word_history.csv: 4本
 [完了] next_investment_word_youtube_performance.csv: 4本
 ===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-20 19:10:52 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 108本
+[OK] 最新動画: 2026-08-20 / 【メタプラネット】純損失1,828億円でも株価16%急騰。BTC評価損は本当に「赤字」なのか？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-17
+[OK] Reach日次データを更新: 3390行読み込み
+[INFO] Analytics処理: 20/108
+[INFO] Analytics処理: 40/108
+[INFO] Analytics処理: 60/108
+[INFO] Analytics処理: 80/108
+[INFO] Analytics処理: 100/108
+[OK] Candidate Scout Cloud同期: history=108 / performance=108
+
+[完了] stock_arena_history.csv: 108本
+[完了] stock_arena_youtube_performance.csv: 108本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-20 19:12:25 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 5本
+  - 2026-08-20 / Moderna株急騰。患者ごとに「がんワクチン」を作る時代、誰が儲かる？｜NEXT投資ワード
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-17
+[OK] NEXT Reach日次データを更新: 13行読み込み
+[OK] NEXT投資ワード Cloud同期: history=5 / performance=5
+
+[完了] next_investment_word_history.csv: 5本
+[完了] next_investment_word_youtube_performance.csv: 5本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-21 06:10:17 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 108本
+[OK] 最新動画: 2026-08-20 / 【メタプラネット】純損失1,828億円でも株価16%急騰。BTC評価損は本当に「赤字」なのか？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-18
+[OK] Reach日次データを更新: 3498行読み込み
+[INFO] Analytics処理: 20/108
+[INFO] Analytics処理: 40/108
+[INFO] Analytics処理: 60/108
+[INFO] Analytics処理: 80/108
+[INFO] Analytics処理: 100/108
+[OK] Candidate Scout Cloud同期: history=108 / performance=108
+
+[完了] stock_arena_history.csv: 108本
+[完了] stock_arena_youtube_performance.csv: 108本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-21 06:18:49 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 5本
+  - 2026-08-20 / モデルナ株急騰。患者ごとに「がんワクチン」を作る時代、誰が儲かる？｜NEXT投資ワード
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-18
+[OK] NEXT Reach日次データを更新: 17行読み込み
+[OK] NEXT投資ワード Cloud同期: history=5 / performance=5
+
+[完了] next_investment_word_history.csv: 5本
+[完了] next_investment_word_youtube_performance.csv: 5本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-21 12:19:37 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 108本
+[OK] 最新動画: 2026-08-20 / 【メタプラネット】純損失1,828億円でも株価16%急騰。BTC評価損は本当に「赤字」なのか？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-18
+[OK] Reach日次データを更新: 3498行読み込み
+[INFO] Analytics処理: 20/108
+[INFO] Analytics処理: 40/108
+[INFO] Analytics処理: 60/108
+[INFO] Analytics処理: 80/108
+[INFO] Analytics処理: 100/108
+[OK] Candidate Scout Cloud同期: history=108 / performance=108
+
+[完了] stock_arena_history.csv: 108本
+[完了] stock_arena_youtube_performance.csv: 108本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-21 12:21:38 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 5本
+  - 2026-08-20 / モデルナ株急騰。患者ごとに「がんワクチン」を作る時代、誰が儲かる？｜NEXT投資ワード
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-18
+[OK] NEXT Reach日次データを更新: 17行読み込み
+[OK] NEXT投資ワード Cloud同期: history=5 / performance=5
+
+[完了] next_investment_word_history.csv: 5本
+[完了] next_investment_word_youtube_performance.csv: 5本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-21 18:22:25 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 108本
+[OK] 最新動画: 2026-08-20 / 【メタプラネット】純損失1,828億円でも株価16%急騰。BTC評価損は本当に「赤字」なのか？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-18
+[OK] Reach日次データを更新: 3598行読み込み
+[INFO] Analytics処理: 20/108
+[INFO] Analytics処理: 40/108
+[INFO] Analytics処理: 60/108
+[INFO] Analytics処理: 80/108
+[WARN] Analytics取得失敗 SPCRzy8PD3M: <HttpError 500 when requesting https://youtubeanalytics.googleapis.com/v2/reports?ids=channel%3D%3DMINE&startDate=2026-04-22&endDate=2026-08-18&metrics=views%2CestimatedMinutesWatched%2CaverageViewDuration%2CaverageViewPercentage%2CsubscribersGained%2CsubscribersLost&filters=video%3D%3DSPCRzy8PD3M&alt=json returned "Internal error encountered.". Details: "[{'message': 'Internal error encountered.', 'domain': 'global', 'reason': 'backendError'}]">
+[INFO] Analytics処理: 100/108
+[OK] Candidate Scout Cloud同期: history=108 / performance=108
+
+[完了] stock_arena_history.csv: 108本
+[完了] stock_arena_youtube_performance.csv: 108本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-21 18:24:04 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 5本
+  - 2026-08-20 / モデルナ株急騰。患者ごとに「がんワクチン」を作る時代、誰が儲かる？｜NEXT投資ワード
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-18
+[OK] NEXT Reach日次データを更新: 22行読み込み
+[OK] NEXT投資ワード Cloud同期: history=5 / performance=5
+
+[完了] next_investment_word_history.csv: 5本
+[完了] next_investment_word_youtube_performance.csv: 5本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-22 06:11:34 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 108本
+[OK] 最新動画: 2026-08-20 / 【メタプラネット】純損失1,828億円でも株価16%急騰。BTC評価損は本当に「赤字」なのか？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-19
+[OK] Reach日次データを更新: 3598行読み込み
+[INFO] Analytics処理: 20/108
+[INFO] Analytics処理: 40/108
+[INFO] Analytics処理: 60/108
+[INFO] Analytics処理: 80/108
+[INFO] Analytics処理: 100/108
+[OK] Candidate Scout Cloud同期: history=108 / performance=108
+
+[完了] stock_arena_history.csv: 108本
+[完了] stock_arena_youtube_performance.csv: 108本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-22 06:21:44 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 5本
+  - 2026-08-20 / モデルナ株急騰。患者ごとに「がんワクチン」を作る時代、誰が儲かる？｜NEXT投資ワード
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-19
+[OK] NEXT Reach日次データを更新: 22行読み込み
+[OK] NEXT投資ワード Cloud同期: history=5 / performance=5
+
+[完了] next_investment_word_history.csv: 5本
+[完了] next_investment_word_youtube_performance.csv: 5本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-22 12:22:37 STOCK ARENA sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] STOCK ARENA長尺動画: 108本
+[OK] 最新動画: 2026-08-20 / 【メタプラネット】純損失1,828億円でも株価16%急騰。BTC評価損は本当に「赤字」なのか？｜STOCK ARENA
+[OK] Analytics最新確定日: 2026-08-19
+[OK] Reach日次データを更新: 3598行読み込み
+[INFO] Analytics処理: 20/108
+[INFO] Analytics処理: 40/108
+[INFO] Analytics処理: 60/108
+[INFO] Analytics処理: 80/108
+[INFO] Analytics処理: 100/108
+[OK] Candidate Scout Cloud同期: history=108 / performance=108
+
+[完了] stock_arena_history.csv: 108本
+[完了] stock_arena_youtube_performance.csv: 108本
+[完了] 新しい公開動画は次回以降も自動追加されます。
+===== STOCK ARENA sync exit code: 0 =====
+===== 2026-08-22 12:24:26 NEXT投資ワード sync start =====
+[OK] 認証チャンネル: Stock Arena 株式投資の迷宮
+[OK] NEXT投資ワード動画: 5本
+  - 2026-08-20 / モデルナ株急騰。患者ごとに「がんワクチン」を作る時代、誰が儲かる？｜NEXT投資ワード
+  - 2026-08-18 / 楽天が“攻撃型ドローン”を売り込む？ なぜネット通販の会社が防衛産業に入ったのか｜NEXT投資ワード
+  - 2026-08-16 / ハッカー1人が「AI部隊」を動かす？ 台湾政府への攻撃が示す次のサイバー需要｜NEXT投資ワード
+  - 2026-08-14 / AIデータセンター建設ラッシュと「銅」の次のボトルネックを探る｜NEXT投資ワード
+  - 2026-08-13 / AI投資は「GPU担保」でウォール街の信用ビジネスへ？新時代のリスクと勝者｜NEXT投資ワード
+[OK] Analytics最新確定日: 2026-08-19
+[OK] NEXT Reach日次データを更新: 22行読み込み
+[OK] NEXT投資ワード Cloud同期: history=5 / performance=5
+
+[完了] next_investment_word_history.csv: 5本
+[完了] next_investment_word_youtube_performance.csv: 5本
+===== NEXT投資ワード sync exit code: 0 =====
+===== 2026-08-22 18:25:12 STOCK ARENA sync start =====
+===== STOCK ARENA sync exit code: 1 =====
+===== 2026-08-22 18:25:14 NEXT投資ワード sync start =====
+===== NEXT投資ワード sync exit code: 1 =====
