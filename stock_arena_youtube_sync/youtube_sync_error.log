@@ -146,3 +146,41 @@ Traceback (most recent call last):
   File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/oauth2/_client.py", line 73, in _handle_error_response
     raise exceptions.RefreshError(
 google.auth.exceptions.RefreshError: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
+/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/api_core/_python_version_support.py:254: FutureWarning: You are using a Python version (3.10.2) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+[ERROR] ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
+Traceback (most recent call last):
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/update_stock_arena_youtube.py", line 757, in <module>
+    main()
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/update_stock_arena_youtube.py", line 578, in main
+    creds = get_credentials()
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/update_stock_arena_youtube.py", line 79, in get_credentials
+    creds.refresh(Request())
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/auth/credentials.py", line 517, in refresh
+    self._perform_refresh_token(request)
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/oauth2/credentials.py", line 435, in _perform_refresh_token
+    ) = reauth.refresh_grant(
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/oauth2/reauth.py", line 370, in refresh_grant
+    _client._handle_error_response(response_data, retryable_error)
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/oauth2/_client.py", line 73, in _handle_error_response
+    raise exceptions.RefreshError(
+google.auth.exceptions.RefreshError: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
+/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/api_core/_python_version_support.py:254: FutureWarning: You are using a Python version (3.10.2) which Google will stop supporting in new releases of google.api_core once it reaches its end of life (2026-10-04). Please upgrade to the latest Python version, or at least Python 3.11, to continue receiving updates for google.api_core past that date.
+  warnings.warn(message, FutureWarning)
+[ERROR] ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
+Traceback (most recent call last):
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/update_next_investment_word_youtube.py", line 556, in <module>
+    main()
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/update_next_investment_word_youtube.py", line 445, in main
+    creds = get_credentials()
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/update_next_investment_word_youtube.py", line 80, in get_credentials
+    creds.refresh(Request())
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/auth/credentials.py", line 517, in refresh
+    self._perform_refresh_token(request)
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/oauth2/credentials.py", line 435, in _perform_refresh_token
+    ) = reauth.refresh_grant(
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/oauth2/reauth.py", line 370, in refresh_grant
+    _client._handle_error_response(response_data, retryable_error)
+  File "/Users/matsuoyoshihiro/v4/stock_arena_youtube_sync/.venv_youtube_sync/lib/python3.10/site-packages/google/oauth2/_client.py", line 73, in _handle_error_response
+    raise exceptions.RefreshError(
+google.auth.exceptions.RefreshError: ('invalid_grant: Token has been expired or revoked.', {'error': 'invalid_grant', 'error_description': 'Token has been expired or revoked.'})
