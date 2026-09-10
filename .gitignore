@@ -27,6 +27,7 @@ credential.json
 !pronunciation_dict.json
 youtube_token.json.*
 stock_arena_youtube_sync/candidate_api/cloud_api_credentials.txt
+stock_arena_youtube_sync/candidate_api/.generated_keys
 
 # pip インストーラー
 get-pip.py
