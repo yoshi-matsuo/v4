@@ -5,7 +5,6 @@ yfinance でデータ取得 → ダークモード PNG (1920×1080) を出力す
 
 出力先: outputs/assets
   multi_timeframe_chart.png
-  financial_trend_bar.png
   competitor_heatmap.png
 
 実行:
@@ -29,9 +28,10 @@ import seaborn as sns
 # API キー設定
 #   Financial Modeling Prep (FMP): https://financialmodelingprep.com/
 #   無料プランでも四半期財務データを取得可能（リクエスト制限あり）。
-#   取得したキーをここに貼り付けてください。
+#   環境変数 FMP_API_KEY から取得する（Git管理下にはキーを置かない）。
+#   未設定の場合はFMP取得のみをスキップし、既存のyahooquery/yfinanceフォールバックへ進む。
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FMP_API_KEY: str = "***REMOVED-ROTATED-FMP-KEY***"
+FMP_API_KEY: str = os.getenv("FMP_API_KEY", "")
 
 # Mac 標準日本語フォントを直接設定（japanize_matplotlib 不要）
 for _jp_font in ["Hiragino Sans", "AppleGothic"]:
@@ -229,12 +229,210 @@ def multi_timeframe_chart(ticker: str) -> str:
 # 財務データ取得ユーティリティ — 三段構えハイブリッドフォールバック
 #   第一候補 : FMP API (requests)
 #   第二候補 : yahooquery
-#   最終手段 : yfinance 年次データ（呼び出し元でフォールバック）
+#   第三候補 : yfinance quarterly / get_income_stmt(freq="quarterly")
 #
 # 戻り値の共通フォーマット (yfinance 互換 DataFrame):
-#   rows  = 指標名 ("Total Revenue", "Net Income" など)
-#   cols  = pd.Timestamp 昇順（古い→新しい） ※ _row() が [::-1] で反転済み想定
+#   rows  = 指標名 ("Total Revenue", "Operating Income" など)
+#   cols  = pd.Timestamp 降順（新しい→古い）
 # ═══════════════════════════════════════════════════════════════════════════════
+
+_QUARTERLY_REVENUE_LABELS = (
+    "Total Revenue", "Revenue", "Operating Revenue",
+    "Total Operating Revenue", "Net Sales", "Sales Revenue",
+)
+_QUARTERLY_OPERATING_LABELS = (
+    "Operating Income", "Operating Profit", "Operating Income Loss",
+    "Total Operating Income As Reported",
+)
+
+
+def _normalized_label(value) -> str:
+    """財務項目名を空白・記号・camel case の違いを無視して比較可能にする。"""
+    return "".join(ch for ch in str(value).casefold() if ch.isalnum())
+
+
+def _quarterly_data_is_usable(df: "pd.DataFrame | None") -> tuple[bool, str]:
+    """売上高・営業利益が揃った、十分に新しい四半期データか検証する。"""
+    if df is None or df.empty or len(df.columns) < 2:
+        return False, "2四半期未満"
+
+    labels = {_normalized_label(i): i for i in df.index}
+    revenue_key = next(
+        (_normalized_label(x) for x in _QUARTERLY_REVENUE_LABELS
+         if _normalized_label(x) in labels),
+        None,
+    )
+    operating_key = next(
+        (_normalized_label(x) for x in _QUARTERLY_OPERATING_LABELS
+         if _normalized_label(x) in labels),
+        None,
+    )
+    if revenue_key is None or operating_key is None:
+        return False, "売上高または営業利益の項目なし"
+
+    try:
+        date_columns = pd.DatetimeIndex(pd.to_datetime(df.columns))
+        latest_pos = int(np.argmax(date_columns.asi8))
+        latest_date = pd.Timestamp(date_columns[latest_pos]).tz_localize(None)
+    except Exception as e:
+        return False, f"期間列を日付に変換できません ({e})"
+
+    latest_revenue = df.iloc[df.index.get_loc(labels[revenue_key]), latest_pos]
+    latest_operating = df.iloc[df.index.get_loc(labels[operating_key]), latest_pos]
+    if pd.isna(latest_revenue) or pd.isna(latest_operating):
+        return False, f"最新期間 {latest_date.date()} の売上高または営業利益が欠損"
+
+    # 半年以上古い値は「最新四半期」とみなさない。開示待ちの時間も考慮して185日。
+    age_days = (pd.Timestamp.today().normalize() - latest_date.normalize()).days
+    if age_days > 185:
+        return False, f"最新期間 {latest_date.date()} が古すぎます ({age_days}日前)"
+    return True, f"最新期間={latest_date.date()}"
+
+
+def _load_script_chart_data(
+    script_json_path: str,
+    cli_ticker: str,
+) -> "tuple[pd.DataFrame, dict] | None":
+    """
+    financial_trend_bar.png 用 pure_image スライドの chart_data を読む。
+
+    chart_data が存在しない場合だけ None を返す。chart_data が存在するのに
+    不正な場合は ValueError とし、API データへフォールバックさせない。
+    narration/content_bullets は一切参照しない。
+    """
+    import json
+    import re
+
+    path = os.path.abspath(script_json_path)
+    try:
+        with open(path, encoding="utf-8") as f:
+            script_doc = json.load(f)
+    except Exception as e:
+        raise ValueError(f"script JSONを読み込めません: {e}") from e
+
+    chart_data_candidates: list = []
+
+    def _walk(node) -> None:
+        if isinstance(node, dict):
+            is_target_slide = (
+                node.get("template_type") == "pure_image"
+                and os.path.basename(str(node.get("image_path", "")))
+                == "financial_trend_bar.png"
+            )
+            if is_target_slide and "chart_data" in node:
+                chart_data_candidates.append(node["chart_data"])
+            for value in node.values():
+                _walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                _walk(value)
+
+    _walk(script_doc)
+    if not chart_data_candidates:
+        print(f"  [INFO] {path}: chart_data なし → quarterly 自動取得を試行")
+        return None
+    if len(chart_data_candidates) != 1:
+        raise ValueError(
+            "financial_trend_bar.png 用 chart_data が複数あり、対象を一意に決められません"
+        )
+
+    chart_data = chart_data_candidates[0]
+    if not isinstance(chart_data, dict):
+        raise ValueError("chart_data はオブジェクトである必要があります")
+
+    required_text = ("ticker", "frequency", "currency", "unit", "source")
+    for key in required_text:
+        if not isinstance(chart_data.get(key), str) or not chart_data[key].strip():
+            raise ValueError(f"chart_data.{key} が未指定です")
+
+    chart_ticker = chart_data["ticker"].strip().upper()
+    if chart_ticker != cli_ticker.strip().upper():
+        raise ValueError(
+            f"ticker不一致: chart_data={chart_ticker}, CLI={cli_ticker}"
+        )
+
+    frequency = chart_data["frequency"].strip().casefold()
+    currency = chart_data["currency"].strip().upper()
+    unit = chart_data["unit"].strip().casefold()
+    supported_units = {("JPY", "yen"), ("USD", "usd")}
+    if (currency, unit) not in supported_units:
+        raise ValueError(
+            f"未対応のcurrency/unitです: {currency}/{unit} "
+            "(対応: JPY/yen, USD/usd)"
+        )
+
+    periods = chart_data.get("periods")
+    if not isinstance(periods, list) or not periods:
+        raise ValueError("chart_data.periods が空です")
+
+    parsed_periods: list[dict] = []
+    seen_dates: set[pd.Timestamp] = set()
+    for i, period in enumerate(periods):
+        prefix = f"chart_data.periods[{i}]"
+        if not isinstance(period, dict):
+            raise ValueError(f"{prefix} はオブジェクトである必要があります")
+        label = period.get("label")
+        if not isinstance(label, str) or not label.strip():
+            raise ValueError(f"{prefix}.label が未指定です")
+
+        period_end = period.get("period_end")
+        if not isinstance(period_end, str) or not re.fullmatch(
+            r"\d{4}-\d{2}-\d{2}", period_end
+        ):
+            raise ValueError(f"{prefix}.period_end は YYYY-MM-DD 形式で指定してください")
+        try:
+            ts = pd.Timestamp(period_end)
+        except Exception as e:
+            raise ValueError(f"{prefix}.period_end が不正です: {e}") from e
+        if ts.strftime("%Y-%m-%d") != period_end:
+            raise ValueError(f"{prefix}.period_end は実在する日付ではありません")
+        if ts in seen_dates:
+            raise ValueError(f"period_end が重複しています: {period_end}")
+        seen_dates.add(ts)
+
+        values: dict[str, float] = {}
+        for key in ("revenue", "operating_income"):
+            value = period.get(key)
+            if isinstance(value, bool) or not isinstance(value, (int, float)):
+                raise ValueError(f"{prefix}.{key} は数値で指定してください")
+            if not np.isfinite(value):
+                raise ValueError(f"{prefix}.{key} は有限の数値で指定してください")
+            values[key] = float(value)
+        if values["revenue"] < 0:
+            raise ValueError(f"{prefix}.revenue は0以上で指定してください")
+
+        parsed_periods.append({
+            "label": label.strip(),
+            "period_end": ts,
+            **values,
+        })
+
+    parsed_periods.sort(key=lambda p: p["period_end"])
+    # 表示上限は最新9期間。確認済みデータが少ない場合は存在する分だけ使う。
+    parsed_periods = parsed_periods[-9:]
+    columns = [p["period_end"] for p in reversed(parsed_periods)]
+    fin = pd.DataFrame(
+        [
+            [p["revenue"] for p in reversed(parsed_periods)],
+            [p["operating_income"] for p in reversed(parsed_periods)],
+        ],
+        index=["Total Revenue", "Operating Income"],
+        columns=columns,
+    )
+    metadata = {
+        "frequency": frequency,
+        "currency": currency,
+        "unit": unit,
+        "source": chart_data["source"].strip(),
+        "labels": {p["period_end"]: p["label"] for p in parsed_periods},
+        "period_count": len(parsed_periods),
+    }
+    print(
+        f"  [INFO] {cli_ticker}: [script-json] chart_data 検証成功 "
+        f"(期間数={len(parsed_periods)}, 最新={parsed_periods[-1]['period_end'].date()})"
+    )
+    return fin, metadata
+
 
 def _fmp_quarterly(ticker: str, api_key: str) -> "pd.DataFrame | None":
     """
@@ -243,16 +441,20 @@ def _fmp_quarterly(ticker: str, api_key: str) -> "pd.DataFrame | None":
     """
     import requests as _req
 
+    # 2025-08-31 に /api/v3/ 系レガシーエンドポイントが廃止されたため /stable/ を使用。
+    # 現在のAPIキーのプランでは limit は最大5（6以上は402 Payment Required）。
     url = (
-        "https://financialmodelingprep.com/api/v3/income-statement/"
-        f"{ticker}?period=quarter&limit=13&apikey={api_key}"
+        "https://financialmodelingprep.com/stable/income-statement"
+        f"?symbol={ticker}&period=quarter&limit=5&apikey={api_key}"
     )
     try:
         resp = _req.get(url, timeout=12)
         resp.raise_for_status()
         data = resp.json()
     except Exception as e:
-        print(f"  [WARN] {ticker}: [FMP] リクエスト失敗: {e}")
+        # 例外メッセージ（requestsはURL全体を含めることがある）からAPIキーを必ず除去してから出力する。
+        safe_err = str(e).replace(api_key, "***") if api_key else str(e)
+        print(f"  [WARN] {ticker}: [FMP] リクエスト失敗: {safe_err}")
         return None
 
     # エラーレスポンス or 空リストのチェック
@@ -270,7 +472,7 @@ def _fmp_quarterly(ticker: str, api_key: str) -> "pd.DataFrame | None":
             ts  = pd.Timestamp(entry["date"])
             records[ts] = {
                 "Total Revenue": entry.get("revenue"),
-                "Net Income":    entry.get("netIncome"),
+                "Operating Income": entry.get("operatingIncome"),
             }
         except Exception:
             continue
@@ -331,24 +533,24 @@ def _yq_quarterly(ticker: str) -> "pd.DataFrame | None":
              if c in stmt.columns and stmt[c].notna().any()),
             None,
         )
-        # 純利益: NetIncome → NetIncomeCommonStockholders の順で探す
-        net_col = next(
-            (c for c in ["NetIncome", "NetIncomeCommonStockholders",
-                         "NetIncomeFromContinuingOperationNetMinorityInterest"]
+        # 営業利益
+        operating_col = next(
+            (c for c in ["OperatingIncome", "OperatingProfit",
+                         "OperatingIncomeLoss", "TotalOperatingIncomeAsReported"]
              if c in stmt.columns and stmt[c].notna().any()),
             None,
         )
 
-        if rev_col is None and net_col is None:
-            print(f"  [DEBUG] {ticker}: [yahooquery] 売上高・純利益列なし。"
+        if rev_col is None and operating_col is None:
+            print(f"  [DEBUG] {ticker}: [yahooquery] 売上高・営業利益列なし。"
                   f"利用可能な列: {list(stmt.columns)[:8]}")
             return None
 
         rows: dict[str, pd.Series] = {}
         if rev_col:
             rows["Total Revenue"] = stmt[rev_col]
-        if net_col:
-            rows["Net Income"] = stmt[net_col]
+        if operating_col:
+            rows["Operating Income"] = stmt[operating_col]
 
         df = pd.DataFrame(rows).T
         df.columns.name = None
@@ -370,58 +572,80 @@ def _fetch_quarterly_fin(
     -------
     (fin_df, is_quarterly, source_label)
       fin_df       : rows=指標名, cols=Timestamp(新しい順) ― yfinance 互換
-      is_quarterly : False = 全四半期ソース失敗 → 呼び出し元で年次フォールバック
-      source_label : "FMP" | "yahooquery" | "yfinance" | "annual"
+      is_quarterly : False = 全四半期ソース失敗（年次への自動切替はしない）
+      source_label : "FMP" | "yahooquery" | "yfinance-quarterly" | "unavailable"
     """
-    MIN_COLS = 2  # 最低でも2四半期なければ「取得失敗」扱い
-
     # ── 第一候補: FMP API ──────────────────────────────────────────────────────
-    if FMP_API_KEY and FMP_API_KEY != "YOUR_API_KEY_HERE":
+    if FMP_API_KEY:
         df = _fmp_quarterly(ticker, FMP_API_KEY)
-        if df is not None and len(df.columns) >= MIN_COLS:
+        usable, reason = _quarterly_data_is_usable(df)
+        if usable:
             print(f"  [INFO] {ticker}: [FMP] 四半期データ取得成功"
-                  f" (列数={len(df.columns)})")
+                  f" (列数={len(df.columns)}, {reason})")
             return df, True, "FMP"
         print(f"  [WARN] {ticker}: [FMP] データ不足または失敗"
-              f" → yahooquery にフォールバック")
+              f" ({reason}) → yahooquery にフォールバック")
     else:
         print(f"  [INFO] {ticker}: FMP_API_KEY 未設定"
               f" → yahooquery を試行")
 
     # ── 第二候補: yahooquery ───────────────────────────────────────────────────
     df = _yq_quarterly(ticker)
-    if df is not None and len(df.columns) >= MIN_COLS:
+    usable, reason = _quarterly_data_is_usable(df)
+    if usable:
         print(f"  [INFO] {ticker}: [yahooquery] 四半期データ取得成功"
-              f" (列数={len(df.columns)})")
+              f" (列数={len(df.columns)}, {reason})")
         return df, True, "yahooquery"
     print(f"  [WARN] {ticker}: [yahooquery] データ不足または失敗"
-          f" → yfinance quarterly にフォールバック")
+          f" ({reason}) → yfinance quarterly にフォールバック")
 
     # ── 第三候補: yfinance quarterly ──────────────────────────────────────────
+    # yfinance のバージョンや銘柄によって property / getter のどちらか一方
+    # だけが値を返すことがあるため、公開されている全経路を順に試す。
     sym = yf.Ticker(ticker)
-    for _attr in ("quarterly_financials", "quarterly_income_stmt"):
+    yfinance_getters = (
+        ("get_income_stmt(freq='quarterly')",
+         lambda: sym.get_income_stmt(freq="quarterly")),
+        ("quarterly_income_stmt", lambda: sym.quarterly_income_stmt),
+        ("quarterly_financials", lambda: sym.quarterly_financials),
+    )
+    for getter_name, getter in yfinance_getters:
         try:
-            df = getattr(sym, _attr)
+            df = getter()
             if df is not None and not df.empty:
-                print(f"  [INFO] {ticker}: [yfinance] 四半期データ取得"
-                      f" (列数={len(df.columns)})")
-                return df, True, "yfinance"
-        except Exception:
+                # 各取得経路で列順が異なっても、以降は常に新しい順に統一する。
+                df = df.copy()
+                df.columns = pd.to_datetime(df.columns)
+                df = df.loc[:, ~df.columns.duplicated()].sort_index(
+                    axis=1, ascending=False
+                )
+            usable, reason = _quarterly_data_is_usable(df)
+            if usable:
+                print(f"  [INFO] {ticker}: [yfinance-quarterly] 四半期データ取得"
+                      f" ({getter_name}, 列数={len(df.columns)}, {reason})")
+                return df, True, "yfinance-quarterly"
+            print(f"  [DEBUG] {ticker}: [yfinance-quarterly] {getter_name} は採用不可 ({reason})")
+        except Exception as e:
+            print(f"  [DEBUG] {ticker}: [yfinance-quarterly] {getter_name} 失敗: {e}")
             continue
 
-    # 全四半期ソース失敗 → 年次フォールバック指示
-    print(f"  [WARN] {ticker}: 全ての四半期ソース失敗"
-          f" → 年次（Annual）データにフォールバック")
-    return pd.DataFrame(), False, "annual"
+    print(f"  [WARN] {ticker}: 全ての四半期ソースで有効データを取得できませんでした")
+    return pd.DataFrame(), False, "unavailable"
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
 # 2. financial_trend_bar — 財務トレンド棒グラフ（四半期別・YoY付き）
 # ═══════════════════════════════════════════════════════════════════════════════
-def financial_trend_bar(ticker: str) -> str:
+def financial_trend_bar(
+    ticker: str,
+    mode: str = "quarterly",
+    script_json_path: "str | None" = None,
+) -> str:
     """
-    売上高 / 純利益 の四半期推移（直近12四半期）を描画する。
-    ・四半期優先 → 取得不可の場合は年次にフォールバック
+    売上高 / 営業利益 の推移を描画する。
+    ・通常は直近9四半期。取得不可の場合も年次へ自動フォールバックしない
+    ・mode="annual" を明示した場合のみ yfinance 年次データを使う
+    ・script_json_path の有効な chart_data を最優先する
     ・会計年度ごとに背景バンド + 区切り破線 + 年度ラベルを描画（参考: 学情スタイル）
     ・棒の真上に金額ラベル（大きめフォント）
     ・棒の真下 x 軸に前年同期比（YoY）を色分け表示
@@ -430,30 +654,86 @@ def financial_trend_bar(ticker: str) -> str:
     from datetime import date as date_cls
     from matplotlib.transforms import blended_transform_factory
 
-    sym  = yf.Ticker(ticker)
-    info = sym.info
-    name = _safe(info, "shortName", "longName", default=ticker)
-    _, price_unit = _currency_info(info)
-    unit_label = f"億{'ドル' if price_unit == 'ドル' else '円'}"
+    output_path = os.path.join(OUT_DIR, "financial_trend_bar.png")
+
+    def _skip_stale_quarterly_chart(data_source: str) -> str:
+        """取得失敗を明示し、前回の古い画像が再利用されることも防ぐ。"""
+        print("  [WARN] 最新四半期データ取得失敗。年次グラフは生成しません")
+        if os.path.exists(output_path):
+            try:
+                os.remove(output_path)
+                print(f"  [INFO] 古い financial_trend_bar.png を削除: {output_path}")
+            except OSError as e:
+                print(f"  [WARN] 古い financial_trend_bar.png を削除できませんでした: {e}")
+        print(f"  [RESULT] financial_trend_bar data_source: {data_source}")
+        print("  [RESULT] 最新表示期間: 取得できず（グラフ生成スキップ）")
+        print("  [RESULT] 売上高の最新値: 取得できず")
+        print("  [RESULT] 営業利益の最新値: 取得できず")
+        return ""
+
+    if mode not in {"quarterly", "annual"}:
+        raise ValueError("mode は 'quarterly' または 'annual' を指定してください")
+    if mode == "annual" and script_json_path:
+        raise ValueError("--annual と --script-json は同時に指定できません")
+
+    sym = None
+    info: dict = {}
+    name = ticker
+    script_metadata: "dict | None" = None
+    script_period_labels: dict[pd.Timestamp, str] = {}
+    source_detail = ""
+
+    if script_json_path:
+        try:
+            loaded = _load_script_chart_data(script_json_path, ticker)
+        except ValueError as e:
+            print(f"  [WARN] {ticker}: script-json chart_data 検証失敗: {e}")
+            return _skip_stale_quarterly_chart("script-json-invalid")
+        if loaded is not None:
+            fin_q, script_metadata = loaded
+            is_quarterly = script_metadata["frequency"] == "quarterly"
+            data_source = "script-json"
+            source_detail = script_metadata["source"]
+            script_period_labels = script_metadata["labels"]
+
+    # chart_data 利用時は外部APIへアクセスしない。名称・通貨もJSONを正とする。
+    if script_metadata is not None:
+        currency = script_metadata["currency"]
+        unit = script_metadata["unit"]
+    else:
+        sym = yf.Ticker(ticker)
+        try:
+            info = sym.info or {}
+        except Exception as e:
+            print(f"  [WARN] {ticker}: 銘柄情報を取得できませんでした: {e}")
+        name = _safe(info, "shortName", "longName", default=ticker)
+        currency = str(info.get("currency", "JPY")).upper()
+        unit = "usd" if currency == "USD" else "yen"
+
+    if (currency, unit) == ("USD", "usd"):
+        value_divisor = 1e6
+        unit_label = "百万ドル"
+        y_axis_label = "金額（百万ドル）"
+        y_tick_suffix = "百万"
+    else:
+        value_divisor = 1e8
+        unit_label = "億円"
+        y_axis_label = "金額（億円）"
+        y_tick_suffix = "億"
 
     # ── 候補ラベル定義（大文字小文字・表記揺れ対応） ─────────────────────────
     REV_CANDIDATES = [
-        "Total Revenue", "Revenue", "Operating Revenue",
+        *_QUARTERLY_REVENUE_LABELS,
         "Total Operating Revenue", "Net Sales",
         "Sales Revenue", "Revenues", "Net Revenue",
         "Sales And Services Revenue", "Service Revenue",
     ]
-    NET_CANDIDATES = [
-        "Net Income", "Net Income Common Stockholders",
-        "Net Income Continuous Operations",
-        "Net Income attributable to owners of parent",
-        "Net Income From Continuing Operation Net Minority Interest",
-        "Normalized Income", "Net Income Including Noncontrolling Interests",
-        "Net Income Applicable To Common Shares",
+    OPERATING_CANDIDATES = [
+        *_QUARTERLY_OPERATING_LABELS,
     ]
     # キーワードフォールバック（上記で一致しない場合の部分一致）
     REV_KEYWORDS = ["revenue", "sales", "turnover"]
-    NET_KEYWORDS = ["net income", "net profit", "profit attributable"]
+    OPERATING_KEYWORDS = ["operating income", "operating profit"]
 
     def _row(fin: pd.DataFrame, candidates: list[str],
              fallback_keywords: list[str] | None = None):
@@ -465,10 +745,10 @@ def financial_trend_bar(ticker: str) -> str:
         if fin.empty:
             return None
         fin_w = fin.iloc[:, :13].iloc[:, ::-1]
-        idx_lower = {str(i).lower(): i for i in fin_w.index}
+        idx_normalized = {_normalized_label(i): i for i in fin_w.index}
 
         for c in candidates:
-            actual = idx_lower.get(c.lower())
+            actual = idx_normalized.get(_normalized_label(c))
             if actual is not None:
                 row = fin_w.loc[actual].dropna()
                 if not row.empty:
@@ -477,8 +757,9 @@ def financial_trend_bar(ticker: str) -> str:
 
         if fallback_keywords:
             for kw in fallback_keywords:
-                for key_lower, actual in idx_lower.items():
-                    if kw in key_lower:
+                normalized_kw = _normalized_label(kw)
+                for normalized_key, actual in idx_normalized.items():
+                    if normalized_kw in normalized_key:
                         row = fin_w.loc[actual].dropna()
                         if not row.empty:
                             print(f"  [INFO] {ticker}: キーワード '{kw}' でフォールバック"
@@ -490,62 +771,68 @@ def financial_trend_bar(ticker: str) -> str:
         return None
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    # データ取得: 三段構えハイブリッドフォールバック
-    #   FMP API → yahooquery → yfinance quarterly → yfinance annual
+    # データ取得: script-json → quarterly。annual は明示指定時のみ。
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-    fin_q, is_quarterly, data_source = _fetch_quarterly_fin(ticker)
-
-    rev_row = _row(fin_q, REV_CANDIDATES, fallback_keywords=REV_KEYWORDS)
-    net_row = _row(fin_q, NET_CANDIDATES, fallback_keywords=NET_KEYWORDS)
-
-    # ── 年次フォールバック（四半期ソース全滅 or 行マッチなし） ─────────────────
-    if not is_quarterly or (rev_row is None and net_row is None):
+    if mode == "annual":
         is_quarterly = False
         data_source  = "yfinance-annual"
-        fin_a        = pd.DataFrame()
+        fin_q = pd.DataFrame()
         for _attr in ("financials", "income_stmt"):
             try:
                 _df = getattr(sym, _attr)
                 if _df is not None and not _df.empty:
-                    fin_a = _df
+                    fin_q = _df
                     break
             except Exception:
                 continue
-
-        if fin_a.empty:
-            print(f"  [ERROR] {ticker}: 年次データも取得できませんでした → スキップ")
+        if fin_q.empty:
+            print(f"  [ERROR] {ticker}: 明示指定された年次データを取得できませんでした → スキップ")
             return ""
-
         print(f"  [INFO] {ticker}: [yfinance-annual] 年次データ取得"
-              f" (列数={len(fin_a.columns)})")
-        rev_row = _row(fin_a, REV_CANDIDATES, fallback_keywords=REV_KEYWORDS)
-        net_row = _row(fin_a, NET_CANDIDATES, fallback_keywords=NET_KEYWORDS)
+              f" (列数={len(fin_q.columns)})")
+    elif script_metadata is None:
+        fin_q, is_quarterly, data_source = _fetch_quarterly_fin(ticker)
+        if not is_quarterly:
+            return _skip_stale_quarterly_chart(data_source)
+
+    rev_row = _row(fin_q, REV_CANDIDATES, fallback_keywords=REV_KEYWORDS)
+    operating_row = _row(
+        fin_q, OPERATING_CANDIDATES, fallback_keywords=OPERATING_KEYWORDS
+    )
 
     # ── 最終チェック ──────────────────────────────────────────────────────────
-    if rev_row is None and net_row is None:
-        print(f"  [ERROR] {ticker}: 全データソースから売上高・純利益を取得できませんでした"
-              f" → スキップ")
+    if rev_row is None or operating_row is None:
+        missing = "売上高" if rev_row is None else "営業利益"
+        if is_quarterly:
+            print(f"  [WARN] {ticker}: 最新四半期データに{missing}がありません")
+            return _skip_stale_quarterly_chart(data_source)
+        else:
+            print(f"  [ERROR] {ticker}: 年次データに{missing}がありません → スキップ")
+        print(f"  [RESULT] financial_trend_bar data_source: {data_source}")
+        print("  [RESULT] 最新表示期間: 取得できず（グラフ生成スキップ）")
+        print("  [RESULT] 売上高の最新値: 取得できず")
+        print("  [RESULT] 営業利益の最新値: 取得できず")
         return ""
-    if rev_row is None:
-        print(f"  [WARN] {ticker}: 売上高行が見つかりません → 純利益のみで描画します")
-    if net_row is None:
-        print(f"  [WARN] {ticker}: 純利益行が見つかりません → 売上高のみで描画します")
 
-    # 年次データの列から決算月を検出
-    af = sym.financials if not sym.financials.empty else sym.income_stmt
-    fy_end_month = af.columns[0].month if not af.empty else 3
+    # info の年度末を利用し、四半期モードで年次 statement を暗黙取得しない。
+    last_fy_end = info.get("lastFiscalYearEnd")
+    try:
+        fy_end_month = pd.Timestamp(last_fy_end, unit="s").month
+    except Exception:
+        fy_end_month = pd.Timestamp(fin_q.columns[0]).month if not is_quarterly else 12
 
-    def _to_億(row, label):
-        return (row / 1e8).rename(label) if row is not None else None
+    def _to_display_unit(row, label):
+        return (row / value_divisor).rename(label) if row is not None else None
 
     # Timestamp インデックスのまま結合（FY 判定に使う）
     df_raw = pd.concat(
-        [s for s in [_to_億(rev_row, "売上高"), _to_億(net_row, "純利益")] if s is not None],
+        [_to_display_unit(rev_row, "売上高"),
+         _to_display_unit(operating_row, "営業利益")],
         axis=1,
     ).sort_index()
 
     # NaN クリーニング: 全列が NaN の行（期間）を除去して有効データのみグラフ化
-    df_raw = df_raw.dropna(how="all")
+    df_raw = df_raw.dropna(how="any")
     if df_raw.empty:
         print(f"  [ERROR] {ticker}: NaN 除去後にデータが残りませんでした → スキップ")
         return ""
@@ -560,18 +847,28 @@ def financial_trend_bar(ticker: str) -> str:
         return f"{fy_year % 100:02d}年度", elapsed // 3 + 1
 
     # ── YoY をスライス前（全取得データ）に計算 → 表示9期すべてにYoYを付与 ──
-    yoy_step = 4 if is_quarterly else 1
-    x_labels_full = [f"{_fy_q(ts)[0]}{_fy_q(ts)[1]}期" for ts in df_raw.index]
+    if script_metadata is not None:
+        x_labels_full = [script_period_labels[ts] for ts in df_raw.index]
+    else:
+        x_labels_full = [f"{_fy_q(ts)[0]}{_fy_q(ts)[1]}期" for ts in df_raw.index]
     df_full = df_raw.copy()
     df_full.index = x_labels_full
 
     yoy_data: dict[str, dict[str, float]] = {}
     for col in df_full.columns:
         yoy_col: dict[str, float] = {}
-        for i, lbl in enumerate(x_labels_full):
-            if i < yoy_step:
-                continue
-            curr, prev = df_full[col].iloc[i], df_full[col].iloc[i - yoy_step]
+        for i, (ts, lbl) in enumerate(zip(df_raw.index, x_labels_full)):
+            if script_metadata is not None:
+                # 確認済み期間だけの疎な配列でも、同じ四半期の前年値を日付で探す。
+                prev_ts = ts - pd.DateOffset(years=1)
+                if prev_ts not in df_raw.index:
+                    continue
+                curr, prev = df_raw.at[ts, col], df_raw.at[prev_ts, col]
+            else:
+                yoy_step = 4 if is_quarterly else (1 if mode == "annual" else None)
+                if yoy_step is None or i < yoy_step:
+                    continue
+                curr, prev = df_full[col].iloc[i], df_full[col].iloc[i - yoy_step]
             if pd.notna(curr) and pd.notna(prev) and prev != 0:
                 yoy_col[lbl] = (curr - prev) / abs(prev) * 100
         yoy_data[col] = yoy_col
@@ -582,10 +879,30 @@ def financial_trend_bar(ticker: str) -> str:
 
     ts_list   = list(df_raw.index)
     fy_labels = [_fy_q(ts)[0] for ts in ts_list]
-    x_labels  = [f"{_fy_q(ts)[0]}{_fy_q(ts)[1]}期" for ts in ts_list]
+    if script_metadata is not None:
+        x_labels = [script_period_labels[ts] for ts in ts_list]
+    else:
+        x_labels = [f"{_fy_q(ts)[0]}{_fy_q(ts)[1]}期" for ts in ts_list]
 
     df        = df_raw.copy()
     df.index  = x_labels
+
+    latest_ts = df_raw.index[-1]
+    latest_rev = df_raw["売上高"].iloc[-1]
+    latest_operating = df_raw["営業利益"].iloc[-1]
+    print(f"  [RESULT] financial_trend_bar data_source: {data_source}")
+    print(f"  [RESULT] 表示期間数: {len(df_raw)}")
+    print(f"  [RESULT] 最新表示期間: {x_labels[-1]} ({latest_ts.date()})")
+    print(f"  [RESULT] 売上高: " + " → ".join(
+        f"{lbl}={value:,.2f}{unit_label}"
+        for lbl, value in zip(x_labels, df_raw["売上高"])
+    ))
+    print(f"  [RESULT] 営業利益: " + " → ".join(
+        f"{lbl}={value:,.2f}{unit_label}"
+        for lbl, value in zip(x_labels, df_raw["営業利益"])
+    ))
+    print(f"  [RESULT] 売上高の最新値: {latest_rev:,.2f}{unit_label}")
+    print(f"  [RESULT] 営業利益の最新値: {latest_operating:,.2f}{unit_label}")
 
     # ── FY グループ ───────────────────────────────────────────────────────────
     unique_fys: list[str] = list(dict.fromkeys(fy_labels))
@@ -601,15 +918,15 @@ def financial_trend_bar(ticker: str) -> str:
     # 棒数が多いほどラベルフォントを小さくして重なりを防ぐ
     label_fs = max(8, 13 - max(0, n_dates - 4))
 
-    # 値フォーマット: 小さい値は小数1桁、大きい値は整数
+    # 小さい値は小数2桁を残し、確認済み値を丸めすぎない。
     def _fmt_val(v: float) -> str:
-        return f"{v:.1f}" if abs(v) < 100 else f"{v:,.0f}"
+        return f"{v:.2f}" if abs(v) < 100 else f"{v:,.0f}"
 
-    COL_PALETTE = {"売上高": ACCENT, "純利益": UP}
+    COL_PALETTE = {"売上高": ACCENT, "営業利益": UP}
     # 会計年度ごとの背景バンド色（非常に淡いダーク色）
     BAND_COLS   = ["#1c1900", "#001c1a", "#1a001c", "#001a08"]
 
-    out = os.path.join(OUT_DIR, "financial_trend_bar.png")
+    out = output_path
     fig, ax = plt.subplots(figsize=(FIG_W, FIG_H), dpi=DPI)
     try:
         _apply_dark(fig, [ax])
@@ -617,7 +934,7 @@ def financial_trend_bar(ticker: str) -> str:
         fig.subplots_adjust(bottom=0.26, top=0.86, left=0.09, right=0.96)
 
         # ── 会計年度 背景バンド & 区切り破線（四半期データのみ） ─────────────
-        if is_quarterly:
+        if is_quarterly and script_metadata is None:
             for fi, fy in enumerate(unique_fys):
                 idxs = fy_groups[fy]
                 ax.axvspan(idxs[0] - 0.45, idxs[-1] + 0.45,
@@ -708,7 +1025,7 @@ def financial_trend_bar(ticker: str) -> str:
                 fontsize=9, color=TEXT_DIM, clip_on=False)
 
         # ── 会計年度ラベル（バンド上部、棒グラフ上方） ───────────────────────
-        if is_quarterly:
+        if is_quarterly and script_metadata is None:
             for fy in unique_fys:
                 cx = float(np.mean(fy_groups[fy]))
                 ax.text(cx, 1.012, fy,
@@ -717,8 +1034,10 @@ def financial_trend_bar(ticker: str) -> str:
                         color=TEXT_DIM, clip_on=False)
 
         # ── 軸・凡例 ──────────────────────────────────────────────────────────
-        ax.set_ylabel("金額（億円）", color=TEXT_DIM, fontsize=13)
-        ax.yaxis.set_major_formatter(plt.FuncFormatter(_fmt_oku))
+        ax.set_ylabel(y_axis_label, color=TEXT_DIM, fontsize=13)
+        ax.yaxis.set_major_formatter(
+            plt.FuncFormatter(lambda v, _: f"{v:,.0f}{y_tick_suffix}")
+        )
         ax.tick_params(axis="y", labelsize=13, colors=TEXT_DIM)
 
         ax.legend(loc="upper left", fontsize=13,
@@ -736,10 +1055,15 @@ def financial_trend_bar(ticker: str) -> str:
                 transform=ax.transAxes, ha="right", va="bottom",
                 fontsize=12, color=TEXT_DIM, clip_on=False)
 
-        freq_label = "四半期別" if is_quarterly else "年度別"
+        if script_metadata is not None:
+            freq_label = script_metadata["frequency"]
+            source_label = f"script-json / {source_detail} / 最新: {x_labels[-1]}"
+        else:
+            freq_label = "四半期別" if is_quarterly else "年度別"
+            source_label = data_source
         fig.suptitle(
             f"{name}  ({ticker})  |  財務トレンド（{freq_label}）"
-            f"  ─  データソース: {data_source}",
+            f"  ─  データソース: {source_label}",
             fontsize=18, color=TEXT, fontweight="bold", y=0.97,
         )
 
@@ -1011,17 +1335,50 @@ def _parse_ticker(arg: str) -> str:
     return arg
 
 
+def _parse_cli_args(argv: list[str]) -> tuple[list[str], str, "str | None"]:
+    """既存の位置引数を維持しつつ財務チャート用オプションを取り出す。"""
+    positional: list[str] = []
+    financial_mode = "quarterly"
+    script_json_path = None
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--annual":
+            financial_mode = "annual"
+        elif arg == "--script-json":
+            i += 1
+            if i >= len(argv) or argv[i].startswith("--"):
+                raise ValueError("--script-json の後にJSONファイルを指定してください")
+            script_json_path = argv[i]
+        elif arg.startswith("--"):
+            raise ValueError(f"不明なオプションです: {arg}")
+        else:
+            positional.append(arg)
+        i += 1
+
+    if financial_mode == "annual" and script_json_path:
+        raise ValueError("--annual と --script-json は同時に指定できません")
+    return positional, financial_mode, script_json_path
+
+
 if __name__ == "__main__":
     import sys
 
     # 第1引数: メイン銘柄（省略時は 4564.T）
     #   「銘柄名_コード」形式も受け付ける（例: 富士通_6702 → 6702.T）
     # 第2引数以降: 競合銘柄（省略時はデフォルト）
+    # --annual: financial_trend_bar を明示的に年次モードにする
+    # --script-json: financial_trend_bar が script.json 内の chart_data を最優先で使う
     # 使用例:
     #   python3 generate_charts.py 富士通_6702
     #   python3 generate_charts.py 7203.T 7267.T 7269.T 7270.T
-    target_ticker = _parse_ticker(sys.argv[1]) if len(sys.argv) > 1 else "4564.T"
-    cli_peers     = [_parse_ticker(t) for t in sys.argv[2:]] if len(sys.argv) > 2 else []
+    try:
+        cli_args, financial_mode, script_json_path = _parse_cli_args(sys.argv[1:])
+    except ValueError as e:
+        print(f"[ERROR] {e}")
+        sys.exit(2)
+    target_ticker = _parse_ticker(cli_args[0]) if cli_args else "4564.T"
+    cli_peers     = [_parse_ticker(t) for t in cli_args[1:]]
     PEER_TICKERS  = _resolve_peers(target_ticker, cli_peers)
 
     print("=" * 60)
@@ -1033,7 +1390,11 @@ if __name__ == "__main__":
     multi_timeframe_chart(target_ticker)
 
     print("\n▶ [2/3] financial_trend_bar ...")
-    financial_trend_bar(target_ticker)
+    financial_trend_bar(
+        target_ticker,
+        mode=financial_mode,
+        script_json_path=script_json_path,
+    )
 
     if PEER_TICKERS:
         print("\n▶ [3/3] competitor_heatmap ...")
